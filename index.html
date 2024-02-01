@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Application Form</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container my-5">
+    <div class="row">
+      <div class="col-md-6">
+        <!-- Form section -->
+        <form id="userInfo" class="mb-3">
+          <div class="form-group">
+            <input type="text" class="form-control" placeholder="Voornaam">
+          </div>
+          <div class="form-group">
+            <input type="text" class="form-control" placeholder="Achternaam">
+          </div>
+          <div class="form-group">
+            <input type="text" class="form-control" placeholder="Sleutelwoord">
+          </div>
+          <div class="form-group">
+            <input type="password" class="form-control" placeholder="Password">
+          </div>
+          <div class="form-group">
+            <input type="password" class="form-control" placeholder="Verify Password">
+          </div>
+          <button type="button" class="btn btn-warning">Copy to clipboard</button>
+          <button type="button" class="btn btn-outline-secondary">Clear clipboard</button>
+        </form>
+      </div>
+      <div class="col-md-6">
+       <!-- ... existing code ... -->
+      <!-- ... existing code ... -->
+        <h2>Application</h2>
+        <div class="d-flex flex-wrap" id="applicationIcons">
+          <!-- Add new icon card -->
+          <div class="p-2">
+            <div class="app-icon btn btn-outline-secondary" id="addNewIcon">+</div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+  </div>
+
+  <script src="scripts.js"></script>
+</body>
+</html>

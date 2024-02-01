@@ -1,0 +1,94 @@
+:root {
+  /* Dark Background */
+  --dark-bg: #121212;
+
+  /* Text Colors */
+  --text-primary: #FFFFFF;    /* White text for primary content */
+  --text-secondary: #9e9e9e;  /* Light gray text for secondary content */
+
+  /* Divider and Borders */
+  --divider: #424242;         /* Divider lines and borders */
+
+  /* Primary Color */
+  --primary: #00bcd4;         /* Cyan primary color */
+  --primary-hover: #00acc1;   /* Hover state for primary */
+
+  /* Accent Color */
+  --accent: #f44336;          /* Red accent color */
+
+  /* Tint Color */
+  --tint: #757575;            /* Medium gray tint color */
+}
+
+/* General */
+
+.header {
+  background-color: var(--tint);
+}
+
+.button {
+  background-color: var(--primary);
+  color: var(--text-primary);
+}
+
+.button:hover {
+  background-color: var(--primary-hover);
+}
+
+.error-message {
+  color: var(--accent);
+}
+
+body {
+  background-color: var(--dark-bg);
+  color: var(--text-primary);
+}
+
+.app-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 100px; /* Adjust the width as needed */
+  height: 100px; /* Adjust the height as needed */
+  text-align: center;
+  position: relative; /* For positioning the bin icon */
+  /*color: white;*/
+  /*background-color: var(--primary);*/
+}
+
+.app-icon:hover {
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.app-icon.selected {
+  border: 8px solid white;
+}
+
+.app-logo {
+  max-width: 60%;
+  max-height: 60%;
+}
+
+.app-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.bin-icon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  cursor: pointer;
+}
+
+#addNewIcon {
+  font-size: 40px;
+  font-weight: bold;
+  justify-content: center;
+}
+
