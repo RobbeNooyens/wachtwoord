@@ -1,17 +1,17 @@
 :root {
   /* Dark Background */
-  --dark-bg: #121212;
+  --background: #ECECEC;
 
   /* Text Colors */
-  --text-primary: #FFFFFF;    /* White text for primary content */
-  --text-secondary: #9e9e9e;  /* Light gray text for secondary content */
+  --text-primary: black;    /* White text for primary content */
+  --text-secondary: #474787;  /* Light gray text for secondary content */
 
   /* Divider and Borders */
   --divider: #424242;         /* Divider lines and borders */
 
   /* Primary Color */
-  --primary: #00bcd4;         /* Cyan primary color */
-  --primary-hover: #00acc1;   /* Hover state for primary */
+  --primary: white;         /* Cyan primary color */
+  --primary-hover: #474787;   /* Hover state for primary */
 
   /* Accent Color */
   --accent: #f44336;          /* Red accent color */
@@ -40,7 +40,7 @@
 }
 
 body {
-  background-color: var(--dark-bg);
+  background-color: var(--background);
   color: var(--text-primary);
 }
 
@@ -56,17 +56,19 @@ body {
   height: 100px; /* Adjust the height as needed */
   text-align: center;
   position: relative; /* For positioning the bin icon */
-  /*color: white;*/
-  /*background-color: var(--primary);*/
+  color: white;
+  background-color: var(--primary);
+  overflow: hidden;
 }
 
 .app-icon:hover {
-  opacity: 0.8;
+  /*opacity: 0.8;*/
   cursor: pointer;
+  background-color: var(--primary-hover);
 }
 
 .app-icon.selected {
-  border: 8px solid white;
+  border: 8px solid var(--primary-hover);
 }
 
 .app-logo {
@@ -76,19 +78,32 @@ body {
 
 .app-name {
   font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.bin-icon {
-  position: absolute;
-  top: 0;
-  right: 0;
-  cursor: pointer;
+  margin: 0;
+  font-size: 10px;
 }
 
 #addNewIcon {
   font-size: 40px;
   font-weight: bold;
   justify-content: center;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: var(--text-primary);
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+    background-color: var(--tint);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background-color: var(--tint);
 }
 

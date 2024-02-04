@@ -14,22 +14,22 @@
         <!-- Form section -->
         <form id="userInfo" class="mb-3">
           <div class="form-group">
-            <input type="text" class="form-control" placeholder="Voornaam">
+            <input type="text" class="form-control" placeholder="Voornaam" id="firstName">
           </div>
           <div class="form-group">
-            <input type="text" class="form-control" placeholder="Achternaam">
+            <input type="text" class="form-control" placeholder="Achternaam" id="lastName">
           </div>
           <div class="form-group">
-            <input type="text" class="form-control" placeholder="Sleutelwoord">
+            <input type="text" class="form-control" placeholder="Sleutelwoord" id="pubKey">
           </div>
           <div class="form-group">
-            <input type="password" class="form-control" placeholder="Password">
+            <input type="password" class="form-control" placeholder="Wachtwoord">
           </div>
           <div class="form-group">
-            <input type="password" class="form-control" placeholder="Verify Password">
+            <input type="password" class="form-control" placeholder="Herhaal wachtwoord">
           </div>
-          <button type="button" class="btn btn-warning">Copy to clipboard</button>
-          <button type="button" class="btn btn-outline-secondary">Clear clipboard</button>
+          <button type="button" class="btn btn-primary">Kopieer naar klembord</button>
+          <button type="button" class="btn btn-secondary">Maak klembord leeg</button>
         </form>
       </div>
       <div class="col-md-6">
@@ -39,7 +39,7 @@
         <div class="d-flex flex-wrap" id="applicationIcons">
           <!-- Add new icon card -->
           <div class="p-2">
-            <div class="app-icon btn btn-outline-secondary" id="addNewIcon">+</div>
+            <div class="app-icon btn-primary" id="addNewIcon">+</div>
           </div>
         </div>
 

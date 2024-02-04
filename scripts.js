@@ -21,13 +21,25 @@ window.addEventListener('load', loadApplicationsFromLocalStorage);
 const appIconTemplate = document.createElement('template');
 appIconTemplate.innerHTML = `
   <div class="p-2">
-    <div class="app-icon btn btn-warning">
+    <div class="app-icon btn-primary">
       <span class="app-name"></span>
       <img class="app-logo" src="" alt="App Logo">
-      <div class="bin-icon" onclick="removeApplicationIcon(this)">✖</div>
     </div>
   </div>
 `;
+
+// Event listener to detect "Delete" key press
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Delete' || event.key === '⌫' || event.keyCode === 8) {
+    // Check if there is a selected app icon (you can add a class for selection)
+    const selectedAppIcon = document.querySelector('.selected');
+    if (selectedAppIcon) {
+      // Remove the selected app icon
+      removeApplicationIcon(selectedAppIcon);
+    }
+  }
+});
+
 
 // Mapping of app names to their logos (you can add more)
 const appData = {
@@ -91,12 +103,11 @@ function handleApplicationSelection(selectedIcon) {
 }
 
 // Function to remove an application icon
-function removeApplicationIcon(binIcon) {
+function removeApplicationIcon(iconDiv) {
   const confirmation = window.confirm('Are you sure you want to delete this application?');
   if (!confirmation) {
     return;
   }
-  const iconDiv = binIcon.parentElement.parentElement; // Get the parent app icon div
 
   const appName = iconDiv.querySelector('.app-name').textContent;
   const index = applications.indexOf(appName);
@@ -108,3 +119,47 @@ function removeApplicationIcon(binIcon) {
   localStorage.setItem('applications', JSON.stringify(applications));
   iconDiv.remove(); // Remove the app icon
 }
+
+function save(firstName, lastName, pubKey) {
+  const userData = {
+    firstName: firstName,
+    lastName: lastName,
+    pubKey: pubKey,
+  };
+
+  // Convert the userData object to JSON and store it in local storage
+  localStorage.setItem('userData', JSON.stringify(userData));
+}
+
+function load() {
+  const userDataString = localStorage.getItem('userData');
+  if (userDataString) {
+    const userData = JSON.parse(userDataString);
+
+    // Populate input fields with the stored first name and last name
+    if (userData.firstName)
+      document.getElementById('firstName').value = userData.firstName;
+    if (userData.lastName)
+        document.getElementById('lastName').value = userData.lastName;
+    if (userData.pubKey)
+        document.getElementById('pubKey').value = userData.pubKey;
+  }
+}
+
+function handleInputChange(event) {
+  const firstNameInput = document.getElementById('firstName').value;
+  const lastNameInput = document.getElementById('lastName').value;
+  const pubKeyInput = document.getElementById('pubKey').value;
+
+  // Save the updated values to local storage
+  save(firstNameInput, lastNameInput, pubKeyInput);
+}
+
+window.addEventListener('load', load);
+
+const firstNameInput = document.getElementById('firstName');
+const lastNameInput = document.getElementById('lastName');
+const pubKeyInput = document.getElementById('pubKey');
+firstNameInput.addEventListener('input', handleInputChange);
+lastNameInput.addEventListener('input', handleInputChange);
+pubKeyInput.addEventListener('input', handleInputChange);
