@@ -6,11 +6,13 @@ function loadApplicationsFromLocalStorage() {
   const storedApplications = localStorage.getItem('applications');
   if (storedApplications) {
     applications = JSON.parse(storedApplications);
+    if(applications.length === 0) {
+        applications = ['GOOGLE', 'FACEBOOK', 'MICROSOFT', 'APPLE'];
+        localStorage.setItem('applications', JSON.stringify(applications));
+    }
 
     // Create app icons for each application in the list
-    applications.forEach(function (appName) {
-      createApplicationIcon(appName);
-    });
+    applications.forEach((appName) => createApplicationIcon(appName));
   }
 }
 
@@ -78,8 +80,10 @@ function createApplicationIcon(appName) {
 
 function createNewApplicationIcon(appName) {
   let appNameUpper = appName.toUpperCase();
-  if (applications.indexOf(appNameUpper) !== -1)
+  if (applications.indexOf(appNameUpper) !== -1) {
+    showPopup('Deze app bestaat al!', 3000);
     return;
+  }
   createApplicationIcon(appNameUpper);
   applications.push(appNameUpper);
   localStorage.setItem('applications', JSON.stringify(applications));
@@ -87,7 +91,7 @@ function createNewApplicationIcon(appName) {
 
 // Event listener for adding a new icon
 document.getElementById('addNewIcon').addEventListener('click', function () {
-  let newAppName = prompt('Geef de naam van de applicatie in:');
+  let newAppName = prompt('Geef de naam van de applicatie in: (max 10 tekens)');
   if (newAppName) {
     createNewApplicationIcon(newAppName);
   }
@@ -138,17 +142,6 @@ function load() {
   const userDataString = localStorage.getItem('userData');
   if (userDataString) {
     const userData = JSON.parse(userDataString);
-
-    // const form = document.getElementById('userInfo');
-    // for (const key in userData) {
-    //     if (userData.hasOwnProperty(key)) {
-    //         const input = form.elements[key];
-    //         if (input) {
-    //             input.value = userData[key];
-    //         }
-    //     }
-    // }
-
     // Populate input fields with the stored first name and last name
     if (userData.firstName)
       document.getElementById('firstName').value = userData.firstName;
