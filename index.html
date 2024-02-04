@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Application Form</title>
+  <title>Wachtwoorden</title>
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
   <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
   <div class="container my-5">
@@ -14,22 +16,49 @@
         <!-- Form section -->
         <form id="userInfo" class="mb-3">
           <div class="form-group">
-            <input type="text" class="form-control" placeholder="Voornaam" id="firstName">
+            <label for="firstName">Voornaam</label>
+            <input type="text" class="form-control" placeholder="Voornaam" name="firstName" id="firstName" required>
           </div>
           <div class="form-group">
-            <input type="text" class="form-control" placeholder="Achternaam" id="lastName">
+            <label for="pubKey">Sleutelwoord</label>
+            <input type="text" class="form-control" placeholder="Sleutelwoord" name="pubKey" id="pubKey" required>
           </div>
           <div class="form-group">
-            <input type="text" class="form-control" placeholder="Sleutelwoord" id="pubKey">
+            <label for="password">Wachtwoord</label>
+            <input type="password" class="form-control" placeholder="Wachtwoord" name="password" id="password" required>
           </div>
           <div class="form-group">
-            <input type="password" class="form-control" placeholder="Wachtwoord">
+            <label for="repeatPassword">Herhaal wachtwoord</label>
+            <input type="password" class="form-control" placeholder="Herhaal wachtwoord" name="repeatPassword" id="repeatPassword">
           </div>
+          <hr>
           <div class="form-group">
-            <input type="password" class="form-control" placeholder="Herhaal wachtwoord">
+            <label for="passwordTypeDropdown">Type wachtwoord</label>
+            <div class="input-group">
+            <select class="custom-select" id="passwordTypeDropdown" name="passwordType">
+              <option value="option1">Sterk wachtwoord (+ speciale tekens)</option>
+              <option value="option2">Sterk wachtwoord</option>
+              <option value="option3">6 cijferige PIN</option>
+              <option value="option4">4 cijferige PIN</option>
+            </select>
+            </div>
           </div>
-          <button type="button" class="btn btn-primary">Kopieer naar klembord</button>
-          <button type="button" class="btn btn-secondary">Maak klembord leeg</button>
+          <hr>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Genereer wachtwoord</button>
+              </div>
+          <div class="form-group">
+              <div class="input-group">
+                <input type="password" class="form-control" id="passwordOutput">
+              <span class="password-toggle" id="password-toggle">
+                <i class="bi bi-eye"></i>
+              </span>
+              </div>
+            </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-primary" id="copyBtn">Kopieer naar klembord</button>
+            <button type="button" class="btn btn-secondary" id="clearBtn">Maak klembord leeg</button>
+          </div>
         </form>
       </div>
       <div class="col-md-6">
@@ -42,12 +71,15 @@
             <div class="app-icon btn-primary" id="addNewIcon">+</div>
           </div>
         </div>
-
-
       </div>
     </div>
   </div>
+  <div id="popup" class="popup">
+    This is a popup!
+  </div>
 
   <script src="scripts.js"></script>
+  <script src="hash.js"></script>
+  <script src="popup.js"></script>
 </body>
 </html>

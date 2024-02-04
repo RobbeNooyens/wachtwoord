@@ -31,6 +31,8 @@ appIconTemplate.innerHTML = `
 // Event listener to detect "Delete" key press
 document.addEventListener('keydown', function(event) {
   if (event.key === 'Delete' || event.key === '⌫' || event.keyCode === 8) {
+    if (event.target.tagName.toLowerCase() === 'input')
+      return;
     // Check if there is a selected app icon (you can add a class for selection)
     const selectedAppIcon = document.querySelector('.selected');
     if (selectedAppIcon) {
@@ -46,6 +48,7 @@ const appData = {
   'GOOGLE': 'logos/google.png',
   'FACEBOOK': 'logos/facebook.png',
   'MICROSOFT': 'logos/microsoft.png',
+  'APPLE': 'logos/apple.png',
 };
 
 // Function to create a new application icon using the template
@@ -74,16 +77,17 @@ function createApplicationIcon(appName) {
 }
 
 function createNewApplicationIcon(appName) {
-  createApplicationIcon(appName.toUpperCase());
-  applications.push(appName.toUpperCase());
-
-  // Save the updated list to local storage
+  let appNameUpper = appName.toUpperCase();
+  if (applications.indexOf(appNameUpper) !== -1)
+    return;
+  createApplicationIcon(appNameUpper);
+  applications.push(appNameUpper);
   localStorage.setItem('applications', JSON.stringify(applications));
 }
 
 // Event listener for adding a new icon
 document.getElementById('addNewIcon').addEventListener('click', function () {
-  let newAppName = prompt('Enter the app name:', 'Google');
+  let newAppName = prompt('Geef de naam van de applicatie in:');
   if (newAppName) {
     createNewApplicationIcon(newAppName);
   }
@@ -104,7 +108,7 @@ function handleApplicationSelection(selectedIcon) {
 
 // Function to remove an application icon
 function removeApplicationIcon(iconDiv) {
-  const confirmation = window.confirm('Are you sure you want to delete this application?');
+  const confirmation = window.confirm('Ben je zeker dat je deze app wil verwijderen?');
   if (!confirmation) {
     return;
   }
@@ -117,13 +121,12 @@ function removeApplicationIcon(iconDiv) {
 
   // Save the updated list to local storage
   localStorage.setItem('applications', JSON.stringify(applications));
-  iconDiv.remove(); // Remove the app icon
+  iconDiv.parentElement.remove(); // Remove the app icon
 }
 
-function save(firstName, lastName, pubKey) {
+function save(firstName, pubKey) {
   const userData = {
     firstName: firstName,
-    lastName: lastName,
     pubKey: pubKey,
   };
 
@@ -136,11 +139,19 @@ function load() {
   if (userDataString) {
     const userData = JSON.parse(userDataString);
 
+    // const form = document.getElementById('userInfo');
+    // for (const key in userData) {
+    //     if (userData.hasOwnProperty(key)) {
+    //         const input = form.elements[key];
+    //         if (input) {
+    //             input.value = userData[key];
+    //         }
+    //     }
+    // }
+
     // Populate input fields with the stored first name and last name
     if (userData.firstName)
       document.getElementById('firstName').value = userData.firstName;
-    if (userData.lastName)
-        document.getElementById('lastName').value = userData.lastName;
     if (userData.pubKey)
         document.getElementById('pubKey').value = userData.pubKey;
   }
@@ -148,18 +159,15 @@ function load() {
 
 function handleInputChange(event) {
   const firstNameInput = document.getElementById('firstName').value;
-  const lastNameInput = document.getElementById('lastName').value;
   const pubKeyInput = document.getElementById('pubKey').value;
 
   // Save the updated values to local storage
-  save(firstNameInput, lastNameInput, pubKeyInput);
+  save(firstNameInput, pubKeyInput);
 }
 
 window.addEventListener('load', load);
 
 const firstNameInput = document.getElementById('firstName');
-const lastNameInput = document.getElementById('lastName');
 const pubKeyInput = document.getElementById('pubKey');
 firstNameInput.addEventListener('input', handleInputChange);
-lastNameInput.addEventListener('input', handleInputChange);
 pubKeyInput.addEventListener('input', handleInputChange);

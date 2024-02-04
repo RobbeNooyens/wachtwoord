@@ -4,7 +4,7 @@
 
   /* Text Colors */
   --text-primary: black;    /* White text for primary content */
-  --text-secondary: #474787;  /* Light gray text for secondary content */
+  --text-secondary: white;  /* Light gray text for secondary content */
 
   /* Divider and Borders */
   --divider: #424242;         /* Divider lines and borders */
@@ -42,6 +42,11 @@
 body {
   background-color: var(--background);
   color: var(--text-primary);
+
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard syntax */
 }
 
 .app-icon {
@@ -58,13 +63,18 @@ body {
   position: relative; /* For positioning the bin icon */
   color: white;
   background-color: var(--primary);
-  overflow: hidden;
+  /*border: 8px solid var(--primary);*/
 }
 
 .app-icon:hover {
   /*opacity: 0.8;*/
   cursor: pointer;
   background-color: var(--primary-hover);
+}
+
+.btn-primary:active {
+  /*opacity: 0.6;*/
+  background-color: black;
 }
 
 .app-icon.selected {
@@ -96,14 +106,51 @@ body {
 
 .btn-primary:hover {
     background-color: var(--primary-hover);
+  cursor: pointer;
 }
 
 .btn-secondary {
-    background-color: var(--tint);
-    color: var(--text-primary);
+    background-color: var(--primary-hover);
+    color: var(--text-secondary);
 }
 
 .btn-secondary:hover {
-    background-color: var(--tint);
+  background-color: var(--primary);
+  color: var(--text-primary);
+  cursor: pointer;
 }
+
+/* Add styles for the password toggle icon */
+.password-toggle {
+    cursor: pointer;
+    user-select: none;
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    color: black; /* Color for the toggle text */
+}
+
+#passwordOutput {
+    margin-right: 40px;
+    background-color: white;
+    overflow-x: auto; /* Allows horizontal scrolling if text overflows */
+    white-space: nowrap;
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    font-size: 40px;
+    left: 50%;
+    top: 40%;
+    transform: translate(-50%, -50%);
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
 
