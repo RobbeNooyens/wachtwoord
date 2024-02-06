@@ -5,14 +5,6 @@ async function createHash(inputData) {
     return Array.from(new Uint8Array(hashBuffer));
 }
 
-document.getElementById('copyBtn').addEventListener('click',() => {
-    const passwordOutput = document.getElementById('passwordOutput').value;
-    if (passwordOutput) {
-        navigator.clipboard.writeText(passwordOutput);
-        showPopup('Veilig wachtwoord gekopieerd!', 2000);
-    }
-});
-
 function formatHash(passwordType, hash) {
     const nums = '0123456789';
     const lowerCase = 'abcdefghijklmnopqrstuvwxyz';
@@ -40,6 +32,14 @@ function formatHash(passwordType, hash) {
 
 }
 
+document.getElementById('copyBtn').addEventListener('click',() => {
+    const passwordOutput = document.getElementById('passwordOutput').value;
+    if (passwordOutput) {
+        navigator.clipboard.writeText(passwordOutput);
+        showPopup('Veilig wachtwoord gekopieerd!', 2000);
+    }
+});
+
 document.getElementById('userInfo').addEventListener('submit', async (event) => {
     event.preventDefault(); // Prevent the default form submission
 
@@ -63,7 +63,7 @@ document.getElementById('userInfo').addEventListener('submit', async (event) => 
     const appName = selectedApp.querySelector('.app-name').textContent;
 
     // Calculate the hash based on the form inputs
-    const hashInput = `${firstName}${pubKey}${passwordTypeDropdown}${password}${appName}`;
+    const hashInput = `${firstName}${pubKey}${password}${appName}`;
     const hash = await createHash(hashInput); // Assuming you have the createHash function defined
 
     // Display the hash in the "passwordOutput" input field
