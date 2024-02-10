@@ -74,6 +74,10 @@ document.getElementById('userInfo').addEventListener('submit', async (event) => 
 
 document.getElementById('clearBtn').addEventListener('click',  function () {
     navigator.clipboard.writeText("");
+    // Clear the password output field and the two password fields
+    document.getElementById('passwordOutput').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('repeatPassword').value = '';
     showPopup('Klembord leeggemaakt!', 2000);
 });
 
