@@ -9,20 +9,18 @@ function formatHash(passwordType, hash) {
     const nums = '0123456789';
     const lowerCase = 'abcdefghijklmnopqrstuvwxyz';
     const upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const specialChars = '@!?,.;:\'"{}[]()&';
-    const sum = hash.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-    const avg = Math.round(sum / hash.length);
+    const specialChars = '!@#$%\'"()&*+,-./:;<=>?[]^_`{|}~';
 
     if (passwordType === 'option1' || passwordType === 'option2') {
         let characters = nums + lowerCase + upperCase;
         if (passwordType === 'option1')
             characters += specialChars;
         let result = '';
-        result += nums[(sum+avg) % nums.length];
-        result += lowerCase[sum % lowerCase.length];
-        result += upperCase[avg % upperCase.length];
+        result += nums[hash[0] % nums.length];
+        result += lowerCase[hash[1] % lowerCase.length];
+        result += upperCase[hash[2] % upperCase.length];
         result += hash.map(byte => characters[byte % characters.length]).join('');
-        return result.substring(0, 20);
+        return result.substring(3, 23);
     } else if (passwordType === 'option3' || passwordType === 'option4') {
         const length = passwordType === 'option3' ? 6 : 4;
         return hash.map(byte => nums[byte % nums.length]).join('').substring(0, length);

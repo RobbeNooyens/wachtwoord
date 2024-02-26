@@ -6,14 +6,12 @@ function loadApplicationsFromLocalStorage() {
   const storedApplications = localStorage.getItem('applications');
   if (storedApplications) {
     applications = JSON.parse(storedApplications);
-    if(applications.length === 0) {
-        applications = ['GOOGLE', 'FACEBOOK', 'MICROSOFT', 'APPLE'];
-        localStorage.setItem('applications', JSON.stringify(applications));
-    }
-
-    // Create app icons for each application in the list
-    applications.forEach((appName) => createApplicationIcon(appName));
+  } else {
+    applications = ['GOOGLE', 'FACEBOOK', 'MICROSOFT', 'APPLE'];
+    localStorage.setItem('applications', JSON.stringify(applications));
   }
+  // Create app icons for each application in the list
+  applications.forEach((appName) => createApplicationIcon(appName));
 }
 
 // Call the function to load applications when the page loads
@@ -45,14 +43,6 @@ document.addEventListener('keydown', function(event) {
 });
 
 
-// Mapping of app names to their logos (you can add more)
-const appData = {
-  'GOOGLE': 'logos/google.png',
-  'FACEBOOK': 'logos/facebook.png',
-  'MICROSOFT': 'logos/microsoft.png',
-  'APPLE': 'logos/apple.png',
-};
-
 // Function to create a new application icon using the template
 function createApplicationIcon(appName) {
   const appIconsDiv = document.getElementById('applicationIcons');
@@ -65,10 +55,13 @@ function createApplicationIcon(appName) {
 
   // Set the app name and logo
   appNameSpan.textContent = appName;
-  if (appData[appName] === undefined) {
-    appData[appName] = 'logos/default.png';
-  }
-  appLogo.src = appData[appName];
+  // Path to the logo
+  const appLogoPath = `logos/${appName.toLowerCase().replace(" ", "_")}.png`;
+  const defaultLogoPath = 'logos/default.png';
+
+  appLogo.onerror = () => appLogo.src = defaultLogoPath;
+  appLogo.onload = () => appLogo.src = appLogoPath;
+  appLogo.src = appLogoPath;
 
   // Add a click event listener to handle application selection
   appIcon.addEventListener('click', function () {
@@ -79,13 +72,15 @@ function createApplicationIcon(appName) {
 }
 
 function createNewApplicationIcon(appName) {
-  let appNameUpper = appName.toUpperCase();
-  if (applications.indexOf(appNameUpper) !== -1) {
+  appName = appName.toUpperCase().trim();
+  // Remove all non-alphanumeric characters from the app name
+  appName = appName.replace(/[^a-zA-Z0-9\s]/g, '');
+  if (applications.indexOf(appName) !== -1) {
     showPopup('Deze app bestaat al!', 3000);
     return;
   }
-  createApplicationIcon(appNameUpper);
-  applications.push(appNameUpper);
+  createApplicationIcon(appName);
+  applications.push(appName);
   localStorage.setItem('applications', JSON.stringify(applications));
 }
 
