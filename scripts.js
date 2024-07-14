@@ -123,34 +123,19 @@ function removeApplicationIcon(iconDiv) {
   iconDiv.parentElement.remove(); // Remove the app icon
 }
 
-function save(firstName, pubKey) {
-  const userData = {
-    firstName: firstName,
-    pubKey: pubKey,
-  };
-
-  // Convert the userData object to JSON and store it in local storage
-  localStorage.setItem('userData', JSON.stringify(userData));
+function save(pubKey) {
+  localStorage.setItem('key', pubKey);
 }
 
 function load() {
-  const userDataString = localStorage.getItem('userData');
-  if (userDataString) {
-    const userData = JSON.parse(userDataString);
-    // Populate input fields with the stored first name and last name
-    if (userData.firstName)
-      document.getElementById('firstName').value = userData.firstName;
-    if (userData.pubKey)
-        document.getElementById('pubKey').value = userData.pubKey;
+  const pubKey = localStorage.getItem('key');
+  if (pubKey) {
+    document.getElementById('pubKey').value = pubKey;
   }
 }
 
 function handleInputChange(event) {
-  const firstNameInput = document.getElementById('firstName').value;
-  const pubKeyInput = document.getElementById('pubKey').value;
-
-  // Save the updated values to local storage
-  save(firstNameInput, pubKeyInput);
+  save(document.getElementById('pubKey').value);
 }
 
 window.addEventListener('load', load);

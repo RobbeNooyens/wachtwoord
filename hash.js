@@ -44,7 +44,6 @@ document.getElementById('userInfo').addEventListener('submit', async (event) => 
     event.preventDefault(); // Prevent the default form submission
 
     // Access form elements by their name attributes using event.target
-    const firstName = event.target.elements.firstName.value;
     const pubKey = event.target.elements.pubKey.value;
     const passwordTypeDropdown = event.target.elements.passwordType.value;
     const password = event.target.elements.password.value;
@@ -63,7 +62,7 @@ document.getElementById('userInfo').addEventListener('submit', async (event) => 
     const appName = selectedApp.querySelector('.app-name').textContent;
 
     // Calculate the hash based on the form inputs
-    const hashInput = `${firstName}${pubKey}${password}${appName}`;
+    const hashInput = `${pubKey}${password}${appName}`;
     const hash = await createHash(hashInput); // Assuming you have the createHash function defined
 
     // Display the hash in the "passwordOutput" input field
