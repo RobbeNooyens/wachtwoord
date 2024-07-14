@@ -140,7 +140,5 @@ function handleInputChange(event) {
 
 window.addEventListener('load', load);
 
-const firstNameInput = document.getElementById('firstName');
 const pubKeyInput = document.getElementById('pubKey');
-firstNameInput.addEventListener('input', handleInputChange);
 pubKeyInput.addEventListener('input', handleInputChange);
