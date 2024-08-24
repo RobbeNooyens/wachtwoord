@@ -53,14 +53,20 @@ function createApplicationIcon(appName) {
   const appLogo = appIcon.querySelector('img');
   const appNameSpan = appIcon.querySelector('span');
 
-  // Set the app name and logo
+  // Set the app name
   appNameSpan.textContent = appName;
   // Path to the logo
   const appLogoPath = `logos/${appName.toLowerCase().replace(" ", "_")}.png`;
-  const defaultLogoPath = 'logos/default.png';
 
-  appLogo.onerror = () => appLogo.src = defaultLogoPath;
-  appLogo.onload = () => appLogo.src = appLogoPath;
+  // If the logo fails to load, display a grey lock icon instead
+  appLogo.onerror = () => {
+    appLogo.style.display = 'none'; // Hide the img element
+    const lockIcon = document.createElement('i'); // Create an icon element
+    lockIcon.className = 'grey-lock-icon'; // Add a class to the icon element for styling
+    appIcon.appendChild(lockIcon); // Append the icon to the app icon container
+  };
+
+  // Load the logo image
   appLogo.src = appLogoPath;
 
   // Add a click event listener to handle application selection
@@ -70,6 +76,7 @@ function createApplicationIcon(appName) {
 
   appIconsDiv.insertBefore(iconClone, addIconDiv); // Insert before the "+" icon
 }
+
 
 function createNewApplicationIcon(appName) {
   appName = appName.toUpperCase().trim();

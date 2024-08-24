@@ -138,4 +138,16 @@ body {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
+.grey-lock-icon {
+  display: inline-block;
+  width: 64px; /* Adjust the width as needed */
+  height: 64px; /* Adjust the height as needed */
+  background-color: var(--primary-hover);
+  mask: url('logos/lock-icon.svg') center / contain no-repeat; /* Use an SVG path for the lock icon */
+  -webkit-mask: url('logos/lock-icon.svg') center / contain no-repeat; /* For Safari support */
+  margin-top: 10px; /* Adjust the margin to align vertically if needed */
+}
 
+.app-icon:hover .grey-lock-icon {
+  background-color: var(--primary);
+}
