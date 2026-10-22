@@ -1,151 +1,289 @@
-// Define the applications array to store the list of app names
+const DEFAULT_APPLICATIONS = [
+  { name: 'Google', key: 'GOOGLE', url: 'https://google.com', logo: 'logos/google.png' },
+  { name: 'Facebook', key: 'FACEBOOK', url: 'https://facebook.com', logo: 'logos/facebook.png' },
+  { name: 'Microsoft', key: 'MICROSOFT', url: 'https://microsoft.com', logo: 'logos/microsoft.png' },
+  { name: 'Apple', key: 'APPLE', url: 'https://apple.com', logo: 'logos/apple.png' }
+];
+
 let applications = [];
+let selectedApplication = null;
+
+function normalizeWebsiteUrl(value) {
+  const text = value.trim();
+  if (!text) return null;
+
+  try {
+    const url = new URL(/^[a-z][a-z\d+.-]*:/i.test(text) ? text : `https://${text}`);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+function deriveAppName(url) {
+  const labels = url.hostname.toLowerCase().replace(/^www\./, '').split('.');
+  const compoundSuffixes = ['co.uk', 'org.uk', 'gov.uk', 'com.au', 'net.au', 'com.br', 'co.nz', 'co.jp', 'com.cn'];
+  const suffix = labels.slice(-2).join('.');
+  const index = compoundSuffixes.includes(suffix) ? labels.length - 3 : labels.length - 2;
+  const name = labels[Math.max(index, 0)] || labels[0];
+  return name.split(/[-_]/).filter(Boolean).map(part => part[0].toUpperCase() + part.slice(1)).join(' ');
+}
+
+function makeAppKey(name) {
+  return name.toUpperCase().replace(/[^A-Z0-9\s]/g, '').trim();
+}
 
 function loadApplicationsFromLocalStorage() {
-  applications = [];
-  const storedApplications = localStorage.getItem('applications');
-  if (storedApplications) {
-    applications = JSON.parse(storedApplications);
+  let storedApplications = null;
+  try {
+    storedApplications = JSON.parse(localStorage.getItem('applications'));
+  } catch {
+    localStorage.removeItem('applications');
+  }
+
+  if (Array.isArray(storedApplications)) {
+    applications = storedApplications.map((app) => {
+      if (typeof app === 'string') {
+        const knownApp = DEFAULT_APPLICATIONS.find(item => item.key === makeAppKey(app));
+        return knownApp || { name: app, key: makeAppKey(app), url: '', logo: `logos/${app.toLowerCase().replace(/\s+/g, '_')}.png` };
+      }
+
+      if (!app || typeof app.name !== 'string') return null;
+      const url = typeof app.url === 'string' ? normalizeWebsiteUrl(app.url) : null;
+      return {
+        name: app.name.trim(),
+        key: typeof app.key === 'string' ? app.key : makeAppKey(app.name),
+        url: url ? url.href : '',
+        logo: typeof app.logo === 'string' && /^logos\/[\w.-]+\.png$/.test(app.logo) ? app.logo : ''
+      };
+    }).filter(app => app && app.name && app.key);
   } else {
-    applications = ['GOOGLE', 'FACEBOOK', 'MICROSOFT', 'APPLE'];
-    localStorage.setItem('applications', JSON.stringify(applications));
+    applications = DEFAULT_APPLICATIONS.map(app => ({ ...app }));
+    saveApplications();
   }
-  // Create app icons for each application in the list
-  applications.forEach((appName) => createApplicationIcon(appName));
+
+  applications.forEach(createApplicationIcon);
 }
 
-// Call the function to load applications when the page loads
-window.addEventListener('load', loadApplicationsFromLocalStorage);
-
-// Define an HTML template for the application icon
-const appIconTemplate = document.createElement('template');
-appIconTemplate.innerHTML = `
-  <div class="p-2">
-    <div class="app-icon btn-primary">
-      <span class="app-name"></span>
-      <img class="app-logo" src="" alt="App Logo">
-    </div>
-  </div>
-`;
-
-// Event listener to detect "Delete" key press
-document.addEventListener('keydown', function(event) {
-  if (event.key === 'Delete' || event.key === '⌫' || event.keyCode === 8) {
-    if (event.target.tagName.toLowerCase() === 'input')
-      return;
-    // Check if there is a selected app icon (you can add a class for selection)
-    const selectedAppIcon = document.querySelector('.selected');
-    if (selectedAppIcon) {
-      // Remove the selected app icon
-      removeApplicationIcon(selectedAppIcon);
-    }
-  }
-});
-
-
-// Function to create a new application icon using the template
-function createApplicationIcon(appName) {
-  const appIconsDiv = document.getElementById('applicationIcons');
-  const addIconDiv = document.getElementById('addNewIcon').parentElement;
-
-  const iconClone = document.importNode(appIconTemplate.content, true);
-  const appIcon = iconClone.querySelector('.app-icon');
-  const appLogo = appIcon.querySelector('img');
-  const appNameSpan = appIcon.querySelector('span');
-
-  // Set the app name
-  appNameSpan.textContent = appName;
-  // Path to the logo
-  const appLogoPath = `logos/${appName.toLowerCase().replace(" ", "_")}.png`;
-
-  // If the logo fails to load, display a grey lock icon instead
-  appLogo.onerror = () => {
-    appLogo.style.display = 'none'; // Hide the img element
-    const lockIcon = document.createElement('i'); // Create an icon element
-    lockIcon.className = 'grey-lock-icon'; // Add a class to the icon element for styling
-    appIcon.appendChild(lockIcon); // Append the icon to the app icon container
-  };
-
-  // Load the logo image
-  appLogo.src = appLogoPath;
-
-  // Add a click event listener to handle application selection
-  appIcon.addEventListener('click', function () {
-    handleApplicationSelection(appIcon);
-  });
-
-  appIconsDiv.insertBefore(iconClone, addIconDiv); // Insert before the "+" icon
-}
-
-
-function createNewApplicationIcon(appName) {
-  appName = appName.toUpperCase().trim();
-  // Remove all non-alphanumeric characters from the app name
-  appName = appName.replace(/[^a-zA-Z0-9\s]/g, '');
-  if (applications.indexOf(appName) !== -1) {
-    showPopup('Deze app bestaat al!', 3000);
-    return;
-  }
-  createApplicationIcon(appName);
-  applications.push(appName);
+function saveApplications() {
   localStorage.setItem('applications', JSON.stringify(applications));
 }
 
-// Event listener for adding a new icon
-document.getElementById('addNewIcon').addEventListener('click', function () {
-  let newAppName = prompt('Geef de naam van de applicatie in: (max 10 tekens)');
-  if (newAppName) {
-    createNewApplicationIcon(newAppName);
-  }
-});
+function createApplicationIcon(app) {
+  const appIcons = document.getElementById('applicationIcons');
+  const item = document.createElement('div');
+  item.className = 'app-item';
 
-// Function to handle application selection
-function handleApplicationSelection(selectedIcon) {
-  const icons = document.querySelectorAll('.app-icon');
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'app-choice';
+  button.setAttribute('aria-pressed', 'false');
+  button.setAttribute('aria-label', `Kies ${app.name}`);
 
-  // Remove the 'selected' class from all icons
-  icons.forEach(function (icon) {
-    icon.classList.remove('selected');
-  });
+  const icon = document.createElement('span');
+  icon.className = 'app-icon';
+  const image = document.createElement('img');
+  image.alt = '';
+  image.loading = 'lazy';
+  image.src = app.logo || (app.url ? `${new URL(app.url).origin}/favicon.ico` : '');
+  image.addEventListener('error', () => {
+    image.remove();
+    const initials = document.createElement('span');
+    initials.className = 'app-initials';
+    initials.textContent = app.name.trim().slice(0, 1).toUpperCase();
+    icon.appendChild(initials);
+  }, { once: true });
+  icon.appendChild(image);
 
-  // Apply the 'selected' class to the clicked icon
-  selectedIcon.classList.add('selected');
+  const name = document.createElement('span');
+  name.className = 'app-name';
+  name.textContent = app.name;
+  button.append(icon, name);
+  button.addEventListener('click', () => selectApplication(app, button));
+  item.appendChild(button);
+
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'remove-app';
+  remove.setAttribute('aria-label', `Verwijder ${app.name}`);
+  remove.title = `Verwijder ${app.name}`;
+  remove.textContent = '×';
+  remove.addEventListener('click', () => removeApplication(app, item));
+  item.appendChild(remove);
+  appIcons.appendChild(item);
 }
 
-// Function to remove an application icon
-function removeApplicationIcon(iconDiv) {
-  const confirmation = window.confirm('Ben je zeker dat je deze app wil verwijderen?');
-  if (!confirmation) {
+function selectApplication(app, button) {
+  selectedApplication = app;
+  document.querySelectorAll('.app-choice').forEach((choice) => {
+    const selected = choice === button;
+    choice.classList.toggle('selected', selected);
+    choice.setAttribute('aria-pressed', String(selected));
+  });
+}
+
+function removeApplication(app, item) {
+  if (!window.confirm(`Wil je ${app.name} uit je lijst verwijderen?`)) return;
+  applications = applications.filter(existing => existing !== app);
+  if (selectedApplication === app) selectedApplication = null;
+  saveApplications();
+  item.remove();
+}
+
+function addApplication() {
+  const url = normalizeWebsiteUrl(document.getElementById('newAppUrl').value);
+  const name = document.getElementById('newAppName').value.trim();
+  if (!url) {
+    showPopup('Vul een geldig websiteadres in, bijvoorbeeld voorbeeld.nl.', 3000);
+    document.getElementById('newAppUrl').focus();
+    return;
+  }
+  if (!name) {
+    showPopup('Vul een naam voor de app in.', 2500);
+    document.getElementById('newAppName').focus();
     return;
   }
 
-  const appName = iconDiv.querySelector('.app-name').textContent;
-  const index = applications.indexOf(appName);
-  if (index !== -1) {
-    applications.splice(index, 1);
+  const app = { name, key: makeAppKey(name), url: url.href, logo: '' };
+  if (!app.key) {
+    showPopup('Gebruik een naam met letters of cijfers.', 2500);
+    return;
+  }
+  if (applications.some(existing => existing.key === app.key)) {
+    showPopup('Deze app staat al in je lijst.', 2500);
+    return;
   }
 
-  // Save the updated list to local storage
-  localStorage.setItem('applications', JSON.stringify(applications));
-  iconDiv.parentElement.remove(); // Remove the app icon
+  applications.push(app);
+  saveApplications();
+  createApplicationIcon(app);
+  document.getElementById('newAppForm').hidden = true;
+  document.getElementById('newAppUrl').value = '';
+  document.getElementById('newAppName').value = '';
+  document.getElementById('newAppName').dataset.touched = 'false';
+  showPopup(`${name} is toegevoegd.`, 2000);
+  document.querySelector('.app-choice:last-of-type')?.focus();
 }
 
-function save(pubKey) {
-  localStorage.setItem('key', pubKey);
+function toggleCredentialSettings() {
+  const type = document.querySelector('input[name="credentialType"]:checked').value;
+  document.getElementById('passwordSettings').hidden = type !== 'password';
+  document.getElementById('pinSettings').hidden = type !== 'pin';
+  document.querySelector('.generate-button').textContent = type === 'pin' ? 'Genereer mijn pincode' : 'Genereer mijn wachtwoord';
 }
 
-function load() {
-  const pubKey = localStorage.getItem('key');
-  if (pubKey) {
-    document.getElementById('pubKey').value = pubKey;
+function clearResult() {
+  document.getElementById('passwordOutput').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('repeatPassword').value = '';
+  document.getElementById('passwordOutput').type = 'password';
+  const toggle = document.getElementById('password-toggle');
+  toggle.setAttribute('aria-label', 'Wachtwoord tonen');
+  toggle.setAttribute('aria-pressed', 'false');
+  toggle.disabled = true;
+  document.getElementById('copyBtn').disabled = true;
+  showPopup('De velden zijn gewist.', 2000);
+}
+
+window.addEventListener('load', () => {
+  loadApplicationsFromLocalStorage();
+  document.getElementById('pubKey').value = localStorage.getItem('key') || '';
+  toggleCredentialSettings();
+});
+
+document.getElementById('pubKey').addEventListener('input', (event) => {
+  localStorage.setItem('key', event.target.value);
+});
+
+document.querySelectorAll('input[name="credentialType"]').forEach(input => {
+  input.addEventListener('change', toggleCredentialSettings);
+});
+
+document.getElementById('addNewIcon').addEventListener('click', () => {
+  const form = document.getElementById('newAppForm');
+  form.hidden = !form.hidden;
+  if (!form.hidden) document.getElementById('newAppUrl').focus();
+});
+document.getElementById('cancelAddApp').addEventListener('click', () => {
+  document.getElementById('newAppForm').hidden = true;
+});
+document.getElementById('saveNewApp').addEventListener('click', addApplication);
+document.getElementById('newAppUrl').addEventListener('input', (event) => {
+  const nameInput = document.getElementById('newAppName');
+  if (nameInput.dataset.touched !== 'true') {
+    const url = normalizeWebsiteUrl(event.target.value);
+    nameInput.value = url ? deriveAppName(url) : '';
   }
-}
+});
+document.getElementById('newAppName').addEventListener('input', (event) => {
+  event.target.dataset.touched = 'true';
+});
 
-function handleInputChange(event) {
-  save(document.getElementById('pubKey').value);
-}
+document.getElementById('userInfo').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const pubKey = form.elements.pubKey.value.trim();
+  const password = form.elements.password.value;
+  const repeatPassword = form.elements.repeatPassword.value;
+  const type = form.elements.credentialType.value;
 
-window.addEventListener('load', load);
+  if (repeatPassword && password !== repeatPassword) {
+    showPopup('De hoofdwachtwoorden zijn niet hetzelfde.', 2500);
+    return;
+  }
+  if (!selectedApplication) {
+    showPopup('Kies eerst een website of app.', 2500);
+    document.getElementById('applicationIcons').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
 
-const pubKeyInput = document.getElementById('pubKey');
-pubKeyInput.addEventListener('input', handleInputChange);
+  const lengthField = document.getElementById(type === 'pin' ? 'pinLength' : 'passwordLength');
+  const length = Number(lengthField.value);
+  const min = Number(lengthField.min);
+  const max = Number(lengthField.max);
+  if (!Number.isInteger(length) || length < min || length > max) {
+    showPopup(`Kies een lengte tussen ${min} en ${max}.`, 2500);
+    lengthField.focus();
+    return;
+  }
+
+  try {
+    const hash = await createHash(`${pubKey}${password}${selectedApplication.key}`);
+    document.getElementById('passwordOutput').value = formatHash(type, hash, {
+      length,
+      includeSpecial: document.getElementById('includeSpecial').checked
+    });
+    document.getElementById('password-toggle').disabled = false;
+    document.getElementById('copyBtn').disabled = false;
+    showPopup(type === 'pin' ? 'Je pincode is klaar.' : 'Je wachtwoord is klaar.', 2000);
+  } catch {
+    showPopup('Er ging iets mis bij het maken. Probeer het opnieuw.', 3000);
+  }
+});
+
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  const output = document.getElementById('passwordOutput');
+  if (!output.value) return;
+  try {
+    await navigator.clipboard.writeText(output.value);
+    showPopup('Gekopieerd. Plak het meteen op de website.', 2500);
+  } catch {
+    output.type = 'text';
+    output.select();
+    const copied = document.execCommand('copy');
+    output.type = 'password';
+    window.getSelection()?.removeAllRanges();
+    showPopup(copied ? 'Gekopieerd. Plak het meteen op de website.' : 'Kopiëren lukte niet. Selecteer en kopieer de tekst.', 3000);
+  }
+});
+
+document.getElementById('clearBtn').addEventListener('click', clearResult);
+document.getElementById('password-toggle').addEventListener('click', (event) => {
+  const output = document.getElementById('passwordOutput');
+  const toggle = event.currentTarget;
+  const visible = output.type === 'password';
+  output.type = visible ? 'text' : 'password';
+  toggle.setAttribute('aria-label', visible ? 'Wachtwoord verbergen' : 'Wachtwoord tonen');
+  toggle.setAttribute('aria-pressed', String(visible));
+});
