@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f8fb">
+  <title>Hoe werkt Wachtwoord?</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="Terug naar Wachtwoord">
+      <span class="brand-mark" aria-hidden="true">W</span>
+      <span>Wachtwoord</span>
+    </a>
+    <nav aria-label="Hoofdnavigatie">
+      <a href="index.html">Wachtwoord maken</a>
+    </nav>
+  </header>
+
+  <main class="page-shell how-page">
+    <section class="intro">
+      <p class="eyebrow">Duidelijk en controleerbaar</p>
+      <h1>Hoe wordt je wachtwoord gemaakt?</h1>
+      <p>Je gekozen gegevens worden lokaal omgezet in een vast resultaat. De app bewaart of verstuurt je hoofdwachtwoord niet.</p>
+    </section>
+
+    <section class="how-card">
+      <h2>De stappen</h2>
+      <ul>
+        <li>Je e-mailadres of gebruikersnaam, hoofdwachtwoord en appnaam worden achter elkaar gezet.</li>
+        <li>De tekst wordt met SHA-384 gehasht in je browser. Dat levert 48 bytes op.</li>
+        <li>Die bytes worden omgezet in tekens. Een wachtwoord begint altijd met een cijfer, kleine letter en hoofdletter; als speciale tekens aanstaan, ook met een speciaal teken.</li>
+        <li>Voor een pincode worden de bytes omgezet in cijfers.</li>
+      </ul>
+      <p>De appnaam is de korte naam die bij je website hoort, zoals <strong>MICROSOFT</strong>. Het websiteadres en pictogram zijn alleen voor je lijst: ze veranderen het resultaat niet.</p>
+    </section>
+
+    <section class="how-card">
+      <h2>Pseudocode om over te zetten</h2>
+      <p>Gebruik UTF-8 voor de invoer en SHA-384 voor de hash. De standaardinstellingen geven dezelfde uitkomst als de oorspronkelijke versie: 20 tekens en speciale tekens voor een wachtwoord, of 6 cijfers voor een pincode.</p>
+      <pre class="pseudocode">input = username + masterPassword + appKey
+bytes = SHA384(UTF8(input))
+
+if type == "pin":
+    result = ""
+    for byte in bytes:
+        result += digitCharacters[byte mod 10]
+    return first(pinLength) characters of result
+
+characters = digits + lowercase + uppercase
+result = digitCharacters[bytes[0] mod 10]
+result += lowercase[bytes[1] mod 26]
+result += uppercase[bytes[2] mod 26]
+
+if includeSpecial:
+    characters += specialCharacters
+    result += specialCharacters[bytes[3] mod length(specialCharacters)]
+
+for byte in bytes starting at index 4:
+    result += characters[byte mod length(characters)]
+
+return first(passwordLength) characters of result</pre>
+    </section>
+
+    <section class="how-card">
+      <h2>Goed om te weten</h2>
+      <ul>
+        <li>Hetzelfde e-mailadres, hoofdwachtwoord en dezelfde appnaam leveren steeds hetzelfde resultaat op. Verander je één ervan, dan krijg je een ander wachtwoord.</li>
+        <li>Bewaar je hoofdwachtwoord goed. Als je het vergeet, kan de app het niet terughalen.</li>
+        <li>De invoer wordt direct achter elkaar gezet, precies zoals in de pseudocode. Gebruik daarom overal dezelfde spelling en hoofdletters.</li>
+        <li>Dit is een eenvoudige deterministische generator, geen complete wachtwoordkluis. SHA-384 wordt hier rechtstreeks gebruikt; er is geen extra sleutelversterking of salt.</li>
+        <li>Bij aangepaste lengtes, typekeuze of tekeninstellingen krijg je uiteraard een ander resultaat dan bij de standaardinstellingen.</li>
+      </ul>
+    </section>
+
+    <a class="back-link" href="index.html">← Terug naar wachtwoorden maken</a>
+  </main>
+</body>
+</html>

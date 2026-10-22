@@ -85,7 +85,7 @@
             <div class="field">
               <label for="passwordLength">Lengte van het wachtwoord</label>
               <div class="setting-control">
-                <input type="number" id="passwordLength" min="8" max="48" value="20" inputmode="numeric">
+                <input type="number" id="passwordLength" min="4" max="48" value="20" inputmode="numeric">
                 <span>tekens <span class="setting-default">(standaard: 20)</span></span>
               </div>
               <p class="field-hint">Pas dit alleen aan als een website geen wachtwoord van 20 tekens accepteert.</p>
@@ -149,7 +149,7 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
-          <input type="password" id="passwordOutput" aria-label="Gegenereerd wachtwoord" readonly placeholder="Je wachtwoord verschijnt hier" autocomplete="off">
+          <input type="password" id="passwordOutput" aria-label="Gegenereerde code" readonly placeholder="Je toegangscode verschijnt hier" autocomplete="off">
           <div class="result-actions">
             <button type="button" id="copyBtn" class="button button-primary" disabled>Kopieer</button>
             <button type="button" id="clearBtn" class="button button-secondary">Wissen</button>

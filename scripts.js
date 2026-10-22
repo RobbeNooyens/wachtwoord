@@ -15,6 +15,9 @@ function normalizeWebsiteUrl(value) {
   try {
     const url = new URL(/^[a-z][a-z\d+.-]*:/i.test(text) ? text : `https://${text}`);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    if (url.username || url.password) return null;
+    url.search = '';
+    url.hash = '';
     return url;
   } catch {
     return null;
@@ -23,6 +26,9 @@ function normalizeWebsiteUrl(value) {
 
 function deriveAppName(url) {
   const labels = url.hostname.toLowerCase().replace(/^www\./, '').split('.');
+  if (labels.length === 1 || /^\d+(?:\.\d+){3}$/.test(url.hostname)) {
+    return url.hostname;
+  }
   const compoundSuffixes = ['co.uk', 'org.uk', 'gov.uk', 'com.au', 'net.au', 'com.br', 'co.nz', 'co.jp', 'com.cn'];
   const suffix = labels.slice(-2).join('.');
   const index = compoundSuffixes.includes(suffix) ? labels.length - 3 : labels.length - 2;
@@ -163,7 +169,7 @@ function addApplication() {
   document.getElementById('newAppName').value = '';
   document.getElementById('newAppName').dataset.touched = 'false';
   showPopup(`${name} is toegevoegd.`, 2000);
-  document.querySelector('.app-choice:last-of-type')?.focus();
+  document.querySelector('#applicationIcons .app-item:last-child .app-choice')?.focus();
 }
 
 function toggleCredentialSettings() {
@@ -171,6 +177,7 @@ function toggleCredentialSettings() {
   document.getElementById('passwordSettings').hidden = type !== 'password';
   document.getElementById('pinSettings').hidden = type !== 'pin';
   document.querySelector('.generate-button').textContent = type === 'pin' ? 'Genereer mijn pincode' : 'Genereer mijn wachtwoord';
+  document.getElementById('passwordOutput').placeholder = type === 'pin' ? 'Je pincode verschijnt hier' : 'Je wachtwoord verschijnt hier';
 }
 
 function clearResult() {
@@ -178,8 +185,9 @@ function clearResult() {
   document.getElementById('password').value = '';
   document.getElementById('repeatPassword').value = '';
   document.getElementById('passwordOutput').type = 'password';
+  const type = document.querySelector('input[name="credentialType"]:checked').value;
   const toggle = document.getElementById('password-toggle');
-  toggle.setAttribute('aria-label', 'Wachtwoord tonen');
+  toggle.setAttribute('aria-label', type === 'pin' ? 'Pincode tonen' : 'Wachtwoord tonen');
   toggle.setAttribute('aria-pressed', 'false');
   toggle.disabled = true;
   document.getElementById('copyBtn').disabled = true;
@@ -223,7 +231,7 @@ document.getElementById('newAppName').addEventListener('input', (event) => {
 document.getElementById('userInfo').addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
-  const pubKey = form.elements.pubKey.value.trim();
+  const pubKey = form.elements.pubKey.value;
   const password = form.elements.password.value;
   const repeatPassword = form.elements.repeatPassword.value;
   const type = form.elements.credentialType.value;
@@ -254,6 +262,8 @@ document.getElementById('userInfo').addEventListener('submit', async (event) => 
       length,
       includeSpecial: document.getElementById('includeSpecial').checked
     });
+    document.getElementById('passwordOutput').setAttribute('aria-label', type === 'pin' ? 'Gegenereerde pincode' : 'Gegenereerd wachtwoord');
+    document.getElementById('password-toggle').setAttribute('aria-label', type === 'pin' ? 'Pincode tonen' : 'Wachtwoord tonen');
     document.getElementById('password-toggle').disabled = false;
     document.getElementById('copyBtn').disabled = false;
     showPopup(type === 'pin' ? 'Je pincode is klaar.' : 'Je wachtwoord is klaar.', 2000);
@@ -272,9 +282,16 @@ document.getElementById('copyBtn').addEventListener('click', async () => {
     output.type = 'text';
     output.select();
     const copied = document.execCommand('copy');
-    output.type = 'password';
-    window.getSelection()?.removeAllRanges();
-    showPopup(copied ? 'Gekopieerd. Plak het meteen op de website.' : 'Kopiëren lukte niet. Selecteer en kopieer de tekst.', 3000);
+    if (copied) {
+      output.type = 'password';
+      window.getSelection()?.removeAllRanges();
+      showPopup('Gekopieerd. Plak het meteen op de website.', 2500);
+    } else {
+      output.type = 'text';
+      output.focus();
+      output.select();
+      showPopup('Kopiëren lukte niet. De code staat geselecteerd; kopieer deze handmatig.', 3500);
+    }
   }
 });
 
@@ -284,6 +301,8 @@ document.getElementById('password-toggle').addEventListener('click', (event) => 
   const toggle = event.currentTarget;
   const visible = output.type === 'password';
   output.type = visible ? 'text' : 'password';
-  toggle.setAttribute('aria-label', visible ? 'Wachtwoord verbergen' : 'Wachtwoord tonen');
+  const type = document.querySelector('input[name="credentialType"]:checked').value;
+  const label = type === 'pin' ? 'Pincode' : 'Wachtwoord';
+  toggle.setAttribute('aria-label', `${label} ${visible ? 'verbergen' : 'tonen'}`);
   toggle.setAttribute('aria-pressed', String(visible));
 });
