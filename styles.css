@@ -541,71 +541,159 @@ a:hover {
 
 .app-filter {
   margin: 0 0 19px;
-  padding: 13px 15px 10px;
+  padding: 12px 14px 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--soft-surface);
 }
 
-.app-filter-heading,
-.letter-endpoints {
+.app-filter-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.app-filter-heading {
-  margin-bottom: 5px;
+  min-height: 25px;
+  margin-bottom: 4px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 650;
 }
 
-.app-filter-heading output {
-  display: grid;
-  width: 26px;
-  height: 26px;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--blue-soft);
+.clear-app-filter {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
   color: var(--blue);
-  font-size: 14px;
-  font-weight: 800;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.clear-app-filter:hover {
+  background: var(--blue-soft);
+}
+
+.app-letter-carousel {
+  position: relative;
+  height: 48px;
+  margin: 0 1px;
+  border-radius: 10px;
+}
+
+.app-letter-carousel:focus-within {
+  outline: 3px solid rgba(49, 91, 232, .18);
 }
 
 #appLetterFilter {
-  display: block;
+  position: absolute;
+  z-index: 2;
+  inset: 0;
   width: 100%;
-  height: 21px;
+  height: 100%;
   margin: 0;
-  accent-color: var(--blue);
+  opacity: 0;
   cursor: pointer;
 }
 
 .letter-ticks {
-  display: flex;
-  justify-content: space-between;
-  margin: -2px 7px 4px;
+  position: absolute;
+  inset: 0 20px;
+}
+
+.letter-ticks::before {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line);
+  content: "";
+  transform: translateY(-50%);
 }
 
 .letter-tick {
-  width: 3px;
-  height: 3px;
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--surface);
   border-radius: 50%;
   background: #aab8ca;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  transition: width .16s ease, height .16s ease, background-color .16s ease, color .16s ease, box-shadow .16s ease;
+}
+
+.letter-tick.distance-0 {
+  width: 5px;
+  height: 5px;
+}
+
+.letter-tick.distance-1 {
+  width: 22px;
+  height: 22px;
+}
+
+.letter-tick.distance-2 {
+  width: 16px;
+  height: 16px;
+  font-size: 7px;
+}
+
+.letter-tick.distance-3 {
+  width: 11px;
+  height: 11px;
+  font-size: 6px;
+}
+
+.letter-tick.endpoint:not(.active) {
+  width: 9px;
+  height: 9px;
 }
 
 .letter-tick.active {
-  width: 5px;
-  height: 5px;
-  margin-top: -1px;
+  z-index: 1;
+  width: 38px;
+  height: 38px;
+  border-color: var(--blue);
   background: var(--blue);
+  box-shadow: 0 3px 9px rgba(49, 91, 232, .24);
+  color: #fff;
+  font-size: 15px;
 }
 
-.letter-endpoints {
-  color: var(--muted);
+.letter-tick.active.distance-1 {
+  width: 25px;
+  height: 25px;
   font-size: 10px;
-  font-weight: 750;
+}
+
+.letter-tick.active.distance-2 {
+  width: 18px;
+  height: 18px;
+  font-size: 8px;
+}
+
+.letter-tick.active.distance-3 {
+  width: 12px;
+  height: 12px;
+  font-size: 6px;
+}
+
+:root[data-theme="dark"] .letter-tick {
+  border-color: var(--soft-surface);
+  background: #647b99;
+  color: #d8e4f4;
+}
+
+:root[data-theme="dark"] .letter-tick.active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #142238;
 }
 
 .empty-app-filter {
@@ -1190,8 +1278,8 @@ a:hover {
   }
 
   .letter-ticks {
-    margin-right: 6px;
-    margin-left: 6px;
+    right: 17px;
+    left: 17px;
   }
 
   .toast {

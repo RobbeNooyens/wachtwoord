@@ -14,6 +14,7 @@ let confirmationResolver = null;
 let appsExpanded = false;
 let displayedApplications = [];
 let activeAppLetter = null;
+let selectedAppLetter = 'A';
 
 const MAX_VISIBLE_APPS = 30;
 const APP_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -272,6 +273,7 @@ function selectApplication(app, button) {
   const appLetter = app.name.trim().charAt(0).toUpperCase();
   if (activeAppLetter && appLetter !== activeAppLetter && APP_LETTERS.includes(appLetter)) {
     activeAppLetter = appLetter;
+    selectedAppLetter = appLetter;
     const filter = document.getElementById('appLetterFilter');
     filter.value = APP_LETTERS.indexOf(appLetter);
     updateAppLetterDisplay();
@@ -291,12 +293,23 @@ function selectApplication(app, button) {
 
 function updateAppLetterDisplay() {
   const filter = document.getElementById('appLetterFilter');
-  const letter = APP_LETTERS[Number(filter.value)];
-  document.getElementById('appLetterValue').value = letter;
-  filter.setAttribute('aria-valuetext', letter);
+  const selectedIndex = APP_LETTERS.indexOf(selectedAppLetter);
+  document.getElementById('appLetterValue').textContent = activeAppLetter
+    ? `Filter op ${selectedAppLetter}.`
+    : `Geen filter. Alle apps worden getoond. Positie ${selectedAppLetter}.`;
+  filter.setAttribute('aria-valuetext', activeAppLetter ? selectedAppLetter : `${selectedAppLetter}, alle apps`);
+  document.getElementById('clearAppFilter').hidden = !activeAppLetter;
   document.querySelectorAll('.letter-tick').forEach((tick, index) => {
-    tick.classList.toggle('active', index === Number(filter.value));
+    const distance = Math.abs(index - selectedIndex);
+    tick.className = `letter-tick distance-${Math.min(distance, 4)}${index === 0 || index === 25 ? ' endpoint' : ''}${index === selectedIndex ? ' active' : ''}`;
+    tick.textContent = distance <= 3 ? APP_LETTERS[index] : '';
   });
+}
+
+function clearApplicationFilter() {
+  activeAppLetter = null;
+  updateAppLetterDisplay();
+  renderApplicationIcons();
 }
 
 function openApplicationDialog() {
@@ -644,7 +657,8 @@ function initializeEvents() {
     renderApplicationIcons();
   });
   document.getElementById('appLetterFilter').addEventListener('input', (event) => {
-    activeAppLetter = APP_LETTERS[Number(event.target.value)];
+    selectedAppLetter = APP_LETTERS[Number(event.target.value)];
+    activeAppLetter = selectedAppLetter;
     updateAppLetterDisplay();
     appsExpanded = false;
     renderApplicationIcons();
@@ -655,6 +669,7 @@ function initializeEvents() {
     return tick;
   }));
   updateAppLetterDisplay();
+  document.getElementById('clearAppFilter').addEventListener('click', clearApplicationFilter);
 
   document.getElementById('nextStep').addEventListener('click', async () => {
     if (currentStep === 1) await continueFromStepOne();

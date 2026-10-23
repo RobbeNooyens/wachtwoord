@@ -122,11 +122,13 @@
         <div class="app-filter">
           <div class="app-filter-heading">
             <label for="appLetterFilter">Filter op letter</label>
-            <output id="appLetterValue" for="appLetterFilter" aria-live="polite">A</output>
+            <button type="button" id="clearAppFilter" class="clear-app-filter" hidden>Alle apps</button>
           </div>
-          <input type="range" id="appLetterFilter" min="0" max="25" value="0" step="1" aria-label="Filter websites en apps op beginletter" aria-valuetext="A">
-          <div id="letterTicks" class="letter-ticks" aria-hidden="true"></div>
-          <div class="letter-endpoints" aria-hidden="true"><span>A</span><span>Z</span></div>
+          <div class="app-letter-carousel">
+            <div id="letterTicks" class="letter-ticks" aria-hidden="true"></div>
+            <input type="range" id="appLetterFilter" min="0" max="25" value="0" step="1" aria-label="Filter websites en apps op beginletter" aria-valuetext="A">
+          </div>
+          <span id="appLetterValue" class="visually-hidden" aria-live="polite">A</span>
         </div>
         <div id="applicationIcons" class="app-grid" aria-label="Beschikbare websites en apps"></div>
         <button type="button" id="expandApps" class="expand-apps" hidden>Toon alle apps</button>
