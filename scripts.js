@@ -663,9 +663,10 @@ function initializeEvents() {
     appsExpanded = false;
     renderApplicationIcons();
   });
-  document.getElementById('letterTicks').replaceChildren(...Array.from(APP_LETTERS, () => {
+  document.getElementById('letterTicks').replaceChildren(...Array.from(APP_LETTERS, (_, index) => {
     const tick = document.createElement('span');
     tick.className = 'letter-tick';
+    tick.style.left = `${index / (APP_LETTERS.length - 1) * 100}%`;
     return tick;
   }));
   updateAppLetterDisplay();
