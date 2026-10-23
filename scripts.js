@@ -11,9 +11,29 @@ let emailProfile = null;
 let currentStep = 1;
 let generationRequest = 0;
 let confirmationResolver = null;
+let appsExpanded = false;
+
+const MAX_VISIBLE_APPS = 30;
 
 function normalizeEmail(value) {
   return value.replace(/\s/g, '').toLowerCase();
+}
+
+function applyTheme(theme) {
+  const dark = theme === 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#111d30' : '#eff4ff';
+  document.querySelectorAll('.theme-toggle').forEach(button => {
+    button.setAttribute('aria-pressed', String(dark));
+    button.setAttribute('aria-label', dark ? 'Lichte modus inschakelen' : 'Donkere modus inschakelen');
+    button.querySelector('.theme-icon').textContent = dark ? '☀' : '☾';
+    button.querySelector('.theme-label').textContent = dark ? 'Lichte modus' : 'Donkere modus';
+  });
+}
+
+function toggleTheme() {
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 }
 
 function isValidEmail(value) {
@@ -27,11 +47,13 @@ async function hashEmail(email) {
 }
 
 function maskEmail(email) {
+  if (!email.includes('@')) return `${email[0] || '*'}***`;
   const [local, domain] = email.split('@');
+  if (!local || !domain) return `${email[0] || '*'}***`;
   const labels = domain.split('.');
   const suffix = labels.length > 2 && labels.at(-1).length === 2
     ? labels.slice(-2).join('.')
-    : labels.at(-1);
+    : labels.at(-1) || '***';
   const localMask = local.length > 1 ? `${local[0]}***${local.at(-1)}` : `${local[0]}***`;
   return `${localMask}@***.${suffix}`;
 }
@@ -118,7 +140,9 @@ function loadApplicationsFromLocalStorage() {
     applications = storedApplications.map((app) => {
       if (typeof app === 'string') {
         const knownApp = DEFAULT_APPLICATIONS.find(item => item.key === makeAppKey(app));
-        return knownApp || { name: app, key: makeAppKey(app), url: '', logo: `logos/${app.toLowerCase().replace(/\s+/g, '_')}.png` };
+        return knownApp
+          ? { ...knownApp, usageCount: 0, lastUsed: 0 }
+          : { name: app, key: makeAppKey(app), url: '', logo: `logos/${app.toLowerCase().replace(/\s+/g, '_')}.png`, usageCount: 0, lastUsed: 0 };
       }
       if (!app || typeof app.name !== 'string') return null;
       const url = typeof app.url === 'string' ? normalizeWebsiteUrl(app.url) : null;
@@ -126,11 +150,13 @@ function loadApplicationsFromLocalStorage() {
         name: app.name.trim(),
         key: typeof app.key === 'string' ? app.key : makeAppKey(app.name),
         url: url ? url.href : '',
-        logo: typeof app.logo === 'string' && /^logos\/[\w.-]+\.png$/.test(app.logo) ? app.logo : ''
+        logo: typeof app.logo === 'string' && /^logos\/[\w.-]+\.png$/.test(app.logo) ? app.logo : '',
+        usageCount: Number.isSafeInteger(app.usageCount) && app.usageCount > 0 ? app.usageCount : 0,
+        lastUsed: Number.isFinite(app.lastUsed) ? app.lastUsed : 0
       };
     }).filter(app => app && app.name && app.key);
   } else {
-    applications = DEFAULT_APPLICATIONS.map(app => ({ ...app }));
+    applications = DEFAULT_APPLICATIONS.map(app => ({ ...app, usageCount: 0, lastUsed: 0 }));
     saveApplications();
   }
   renderApplicationIcons();
@@ -138,6 +164,14 @@ function loadApplicationsFromLocalStorage() {
 
 function saveApplications() {
   localStorage.setItem('applications', JSON.stringify(applications));
+}
+
+function getRankedApplications() {
+  return [...applications].sort((a, b) =>
+    b.usageCount - a.usageCount ||
+    b.lastUsed - a.lastUsed ||
+    applications.indexOf(a) - applications.indexOf(b)
+  );
 }
 
 function createApplicationIcon(app) {
@@ -199,8 +233,8 @@ function createApplicationIcon(app) {
 
 function renderApplicationIcons() {
   const appIcons = document.getElementById('applicationIcons');
-  appIcons.replaceChildren(...applications.map(createApplicationIcon));
-
+  const rankedApps = getRankedApplications();
+  const visibleApps = appsExpanded ? rankedApps : rankedApps.slice(0, MAX_VISIBLE_APPS);
   const addItem = document.createElement('div');
   addItem.className = 'app-item add-app-item';
   const addButton = document.createElement('button');
@@ -210,16 +244,23 @@ function renderApplicationIcons() {
   addButton.innerHTML = '<span class="add-app-icon" aria-hidden="true">＋</span><span class="app-name">Toevoegen</span>';
   addButton.addEventListener('click', openApplicationDialog);
   addItem.appendChild(addButton);
-  appIcons.appendChild(addItem);
+  appIcons.replaceChildren(addItem, ...visibleApps.map(createApplicationIcon));
+
+  const expandButton = document.getElementById('expandApps');
+  expandButton.hidden = rankedApps.length <= MAX_VISIBLE_APPS;
+  expandButton.textContent = appsExpanded ? 'Toon minder apps' : `Toon alle ${rankedApps.length} apps`;
+  expandButton.setAttribute('aria-expanded', String(appsExpanded));
 }
 
 function selectApplication(app, button) {
+  app.usageCount += 1;
+  app.lastUsed = Date.now();
+  saveApplications();
   selectedApplication = app;
-  document.querySelectorAll('.app-choice:not(.add-app-choice)').forEach((choice) => {
-    const selected = choice === button;
-    choice.classList.toggle('selected', selected);
-    choice.setAttribute('aria-pressed', String(selected));
-  });
+  renderApplicationIcons();
+  const selectedButton = [...document.querySelectorAll('.app-choice:not(.add-app-choice)')]
+    .find(choice => choice.getAttribute('aria-label') === button.getAttribute('aria-label'));
+  selectedButton?.focus();
   updateGeneration();
 }
 
@@ -242,7 +283,7 @@ function addApplication(event) {
     return;
   }
 
-  const app = { name, key: makeAppKey(name), url: url.href, logo: '' };
+  const app = { name, key: makeAppKey(name), url: url.href, logo: '', usageCount: 0, lastUsed: 0 };
   if (!app.key) {
     showPopup('Gebruik een naam met letters of cijfers.', 2500);
     return;
@@ -253,6 +294,7 @@ function addApplication(event) {
   }
 
   applications.push(app);
+  appsExpanded = true;
   saveApplications();
   renderApplicationIcons();
   closeApplicationDialog();
@@ -292,7 +334,37 @@ function stepOneIsValid() {
   const password = document.getElementById('password').value;
   const isNew = document.querySelector('input[name="passwordPurpose"]:checked').value === 'new';
   const repeated = document.getElementById('repeatPassword').value;
-  return isValidEmail(email) && Boolean(password) && (!isNew || (Boolean(repeated) && repeated === password));
+  return Boolean(email) && Boolean(password) && (!isNew || (Boolean(repeated) && repeated === password));
+}
+
+function updateInputFeedback() {
+  const email = emailInputValue();
+  const password = document.getElementById('password').value;
+  const isNew = document.querySelector('input[name="passwordPurpose"]:checked').value === 'new';
+  const repeated = document.getElementById('repeatPassword').value;
+  const emailWarning = document.getElementById('emailWarning');
+  emailWarning.hidden = Boolean(email) && isValidEmail(email);
+  emailWarning.textContent = email
+    ? 'Dit lijkt geen volledig e-mailadres. Controleer de spelling.'
+    : 'Vul je e-mailadres in om verder te gaan.';
+  document.getElementById('emailProfileStatus').hidden = true;
+
+  const passwordStatus = document.getElementById('passwordStatus');
+  passwordStatus.hidden = Boolean(password);
+  passwordStatus.textContent = password ? '' : 'Vul je hoofdwachtwoord in om verder te gaan.';
+
+  const repeatField = document.getElementById('repeatPassword');
+  const repeatStatus = document.getElementById('repeatPasswordStatus');
+  const mismatch = isNew && Boolean(repeated) && repeated !== password;
+  const match = isNew && Boolean(repeated) && repeated === password;
+  repeatField.classList.toggle('input-error', mismatch);
+  repeatField.classList.toggle('input-success', match);
+  repeatField.setAttribute('aria-invalid', String(mismatch));
+  repeatStatus.hidden = !isNew;
+  repeatStatus.className = `field-message ${match ? 'success-message' : 'error-message'}`;
+  repeatStatus.textContent = match
+    ? 'Wachtwoorden komen overeen.'
+    : (repeated ? 'Wachtwoorden komen niet overeen.' : 'Herhaal je hoofdwachtwoord om verder te gaan.');
 }
 
 function updateStepControls() {
@@ -313,13 +385,13 @@ function updateStepControls() {
   if (currentStep === 1) {
     next.textContent = 'Volgende';
     next.disabled = !stepOneIsValid();
+    next.hidden = false;
   } else if (currentStep === 2) {
     next.textContent = 'Volgende';
     next.disabled = false;
+    next.hidden = false;
   } else {
-    const type = document.querySelector('input[name="credentialType"]:checked').value;
-    next.textContent = type === 'pin' ? 'Kopieer pincode' : 'Kopieer wachtwoord';
-    next.disabled = !document.getElementById('passwordOutput').value;
+    next.hidden = true;
   }
 }
 
@@ -334,14 +406,18 @@ function goToStep(step) {
 
 async function continueFromStepOne() {
   if (!stepOneIsValid()) {
-    showPopup('Vul een geldig e-mailadres en hoofdwachtwoord in.', 2500);
+    updateInputFeedback();
+    showPopup(!emailInputValue() ? 'Vul je e-mailadres in.' : 'Vul je hoofdwachtwoord in en controleer de bevestiging.', 2500);
     return;
   }
   const saved = await setEmailProfile(emailInputValue());
   if (!saved) {
-    showPopup(`Dit e-mailadres is opgeslagen als ${emailProfile.masked}. Wis het eerst om een ander adres te gebruiken.`, 4000);
+    const status = document.getElementById('emailProfileStatus');
+    status.textContent = `Dit adres wijkt af van ${emailProfile.masked}. Wis het opgeslagen adres om dit te wijzigen.`;
+    status.hidden = false;
     return;
   }
+  document.getElementById('emailProfileStatus').hidden = true;
   goToStep(2);
 }
 
@@ -388,7 +464,7 @@ async function updateGeneration() {
   const min = Number(lengthField.min);
   const max = Number(lengthField.max);
 
-  if (!isValidEmail(email) || !password || (isNew && (!repeated || repeated !== password)) ||
+  if (!email || !password || (isNew && (!repeated || repeated !== password)) ||
       !selectedApplication || !Number.isInteger(length) || length < min || length > max) {
     clearGeneratedCode();
     return;
@@ -496,21 +572,28 @@ function initializeEvents() {
       emailInput.value = normalized;
       emailInput.setSelectionRange(start, start);
     }
+    updateInputFeedback();
     updateStepControls();
     updateGeneration();
   });
 
   document.getElementById('password').addEventListener('input', () => {
+    updateInputFeedback();
     updateStepControls();
     updateGeneration();
   });
-  document.getElementById('repeatPassword').addEventListener('input', updateGeneration);
+  document.getElementById('repeatPassword').addEventListener('input', () => {
+    updateInputFeedback();
+    updateStepControls();
+    updateGeneration();
+  });
 
   document.querySelectorAll('input[name="passwordPurpose"]').forEach(input => {
     input.addEventListener('change', () => {
       const isNew = input.value === 'new' && input.checked;
       document.getElementById('repeatPasswordField').hidden = !isNew;
       document.getElementById('password').autocomplete = isNew ? 'new-password' : 'current-password';
+      updateInputFeedback();
       updateStepControls();
       updateGeneration();
       if (isNew) document.getElementById('repeatPassword').focus();
@@ -522,6 +605,10 @@ function initializeEvents() {
   document.getElementById('passwordLength').addEventListener('input', updateGeneration);
   document.getElementById('pinLength').addEventListener('input', updateGeneration);
   document.getElementById('includeSpecial').addEventListener('change', updateGeneration);
+  document.getElementById('expandApps').addEventListener('click', () => {
+    appsExpanded = !appsExpanded;
+    renderApplicationIcons();
+  });
 
   document.getElementById('nextStep').addEventListener('click', async () => {
     if (currentStep === 1) await continueFromStepOne();
@@ -551,10 +638,12 @@ function initializeEvents() {
     event.target.dataset.touched = 'true';
   });
   document.getElementById('cancelAddApp').addEventListener('click', closeApplicationDialog);
-  document.getElementById('closeAppDialog').addEventListener('click', closeApplicationDialog);
 
   document.getElementById('cancelConfirm').addEventListener('click', () => resolveConfirmation(false));
   document.getElementById('acceptConfirm').addEventListener('click', () => resolveConfirmation(true));
+  document.querySelectorAll('.theme-toggle').forEach(button => {
+    button.addEventListener('click', toggleTheme);
+  });
   document.getElementById('confirmDialog').addEventListener('cancel', (event) => {
     event.preventDefault();
     resolveConfirmation(false);
@@ -562,9 +651,11 @@ function initializeEvents() {
 }
 
 window.addEventListener('load', async () => {
+  applyTheme(localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
   loadApplicationsFromLocalStorage();
   initializeEvents();
   await loadEmailProfile();
   updateCredentialType();
+  updateInputFeedback();
   updateStepControls();
 });

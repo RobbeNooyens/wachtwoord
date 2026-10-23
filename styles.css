@@ -2,14 +2,34 @@
   color-scheme: light;
   --ink: #17212f;
   --muted: #627184;
-  --line: #e2e8f0;
+  --line: #d7e1f0;
   --surface: #fff;
-  --canvas: #f6f8fb;
-  --blue: #315be8;
-  --blue-dark: #2348c5;
-  --blue-soft: #eff3ff;
-  --green: #13856d;
+  --canvas: #eff4ff;
+  --blue: #234b89;
+  --blue-dark: #173968;
+  --blue-soft: #e8effb;
+  --green: #176c67;
+  --field: #fff;
+  --field-border: #bdcce0;
+  --soft-surface: #f7f9fd;
   --shadow: 0 12px 36px rgba(27, 44, 75, .07);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e6edf7;
+  --muted: #a6b5c9;
+  --line: #35465f;
+  --surface: #1b2a40;
+  --canvas: #111d30;
+  --blue: #8db4ff;
+  --blue-dark: #a9c7ff;
+  --blue-soft: #253a59;
+  --green: #72c3b2;
+  --field: #142238;
+  --field-border: #465b78;
+  --soft-surface: #192940;
+  --shadow: 0 12px 36px rgba(0, 0, 0, .2);
 }
 
 * {
@@ -57,6 +77,10 @@ a:hover {
 }
 
 .site-header {
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  justify-content: flex-end;
   max-width: 1100px;
   margin: 0 auto;
   padding: 20px 28px;
@@ -88,13 +112,19 @@ a:hover {
 
 .page-shell {
   width: min(760px, calc(100% - 40px));
-  margin: 28px auto 80px;
+  margin: 36px auto 80px;
 }
 
 .page-title {
   margin: 0 0 21px;
   font-size: clamp(25px, 4vw, 34px);
   letter-spacing: -.035em;
+}
+
+.wizard-step + .wizard-step {
+  margin-top: 38px;
+  padding-top: 34px;
+  border-top: 1px solid var(--line);
 }
 
 .panel,
@@ -151,9 +181,9 @@ a:hover {
   width: 100%;
   min-height: 52px;
   padding: 12px 14px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--field-border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--field);
   color: var(--ink);
   font-size: 16px;
 }
@@ -167,6 +197,34 @@ a:hover {
 #passwordOutput:focus {
   border-color: var(--blue);
   outline: 3px solid rgba(49, 91, 232, .13);
+}
+
+.field-message {
+  margin: 7px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.warning-message {
+  color: #9a5b08;
+}
+
+.error-message {
+  color: #b8404d;
+}
+
+.success-message {
+  color: #157654;
+}
+
+.input-error {
+  border-color: #c84753 !important;
+  box-shadow: 0 0 0 3px rgba(200, 71, 83, .1);
+}
+
+.input-success {
+  border-color: #19835f !important;
+  box-shadow: 0 0 0 3px rgba(25, 131, 95, .1);
 }
 
 .icon-field {
@@ -191,6 +249,10 @@ a:hover {
   transform: translateY(-50%);
 }
 
+.icon-field:has(.field-message:not([hidden])) .field-icon {
+  top: 26px;
+}
+
 .key-icon svg {
   width: 20px;
   height: 20px;
@@ -208,9 +270,9 @@ a:hover {
   gap: 8px;
   margin: -4px 0 15px;
   padding: 8px 11px;
-  border: 1px solid #d9e2f5;
+  border: 1px solid var(--line);
   border-radius: 9px;
-  background: #f8faff;
+  background: var(--soft-surface);
   color: var(--muted);
   font-size: 13px;
 }
@@ -292,7 +354,7 @@ a:hover {
   align-items: center;
   gap: 12px;
   padding: 13px 14px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--field-border);
   border-radius: 11px;
   cursor: pointer;
 }
@@ -316,7 +378,7 @@ a:hover {
   place-items: center;
   border: 1.5px solid #9aa9ba;
   border-radius: 50%;
-  background: white;
+  background: var(--field);
 }
 
 .choice-card input:checked + .choice-indicator {
@@ -344,23 +406,50 @@ a:hover {
 }
 
 .settings {
-  margin-top: 18px;
-  padding: 13px 15px;
+  margin-top: 24px;
+  padding: 0;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fbfcfe;
+  border-radius: 13px;
+  background: var(--soft-surface);
 }
 
 .settings summary {
-  width: fit-content;
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 15px;
   color: var(--blue);
   cursor: pointer;
   font-size: 14px;
   font-weight: 700;
+  list-style: none;
+}
+
+.settings summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings summary::after {
+  content: "＋";
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.settings[open] summary::after {
+  content: "−";
 }
 
 .settings-content {
-  margin-top: 15px;
+  margin: 0 15px 15px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.settings-description {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .settings-content .field {
@@ -388,9 +477,24 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 9px;
-  width: fit-content;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
   cursor: pointer;
   font-size: 14px;
+}
+
+.check-row strong,
+.check-row small {
+  display: block;
+}
+
+.check-row small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .check-row input {
@@ -421,14 +525,14 @@ a:hover {
   padding: 12px 8px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--surface);
   color: var(--ink);
   cursor: pointer;
 }
 
 .app-choice:hover {
   border-color: #9fb2f5;
-  background: #fafbff;
+  background: var(--soft-surface);
 }
 
 .app-choice.selected {
@@ -443,7 +547,7 @@ a:hover {
   place-items: center;
   overflow: hidden;
   border-radius: 12px;
-  background: #f2f5f9;
+  background: var(--soft-surface);
 }
 
 .app-icon img {
@@ -477,7 +581,7 @@ a:hover {
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: #fff;
+  background: var(--surface);
   color: #748195;
   cursor: pointer;
   font-size: 19px;
@@ -507,12 +611,26 @@ a:hover {
   line-height: 1;
 }
 
+.expand-apps {
+  display: block;
+  min-height: 42px;
+  margin: 13px auto 0;
+  padding: 7px 15px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--soft-surface);
+  color: var(--blue);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .result-card {
   margin-top: 23px;
   padding: 19px;
   border: 1px solid #d9e2f5;
   border-radius: 13px;
-  background: #f8faff;
+  background: var(--soft-surface);
 }
 
 .result-heading {
@@ -536,7 +654,7 @@ a:hover {
   place-items: center;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fff;
+  background: var(--surface);
   color: #40516a;
   cursor: pointer;
 }
@@ -561,8 +679,8 @@ a:hover {
 
 #passwordOutput {
   min-height: 53px;
-  border-color: #dce4f2;
-  background: white;
+  border-color: var(--field-border);
+  background: var(--field);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 17px;
   letter-spacing: .035em;
@@ -601,13 +719,17 @@ a:hover {
   color: #fff;
 }
 
+:root[data-theme="dark"] .button-primary {
+  color: #142238;
+}
+
 .button-primary:hover:not(:disabled) {
   background: var(--blue-dark);
 }
 
 .button-secondary {
   border-color: var(--line);
-  background: white;
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -633,6 +755,32 @@ a:hover {
 
 .wizard-progress,
 .wizard-controls {
+  display: none;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  min-height: 39px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.theme-icon {
+  color: var(--blue);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mobile-theme-toggle {
   display: none;
 }
 
@@ -668,20 +816,6 @@ a:hover {
 .dialog-content {
   position: relative;
   padding: 29px;
-}
-
-.dialog-close {
-  position: absolute;
-  top: 13px;
-  right: 15px;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 25px;
 }
 
 .dialog-icon {
@@ -760,17 +894,13 @@ a:hover {
   }
 
   .site-header {
-    padding: 14px 19px;
+    min-height: 48px;
+    padding: 6px 12px;
   }
 
   .page-shell {
     width: calc(100% - 24px);
-    margin: 17px auto 24px;
-  }
-
-  .page-title {
-    margin-bottom: 14px;
-    font-size: 25px;
+    margin: 10px auto 24px;
   }
 
   .wizard-progress {
@@ -804,6 +934,12 @@ a:hover {
     min-height: 390px;
     padding: 22px 17px;
     border-radius: 15px;
+  }
+
+  .wizard-step + .wizard-step {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
   }
 
   .wizard-step {
@@ -871,6 +1007,21 @@ a:hover {
     backdrop-filter: blur(12px);
   }
 
+  .desktop-theme-toggle {
+    display: none;
+  }
+
+  .mobile-theme-toggle {
+    display: inline-flex;
+    min-width: 42px;
+    min-height: 42px;
+    padding: 6px 9px;
+  }
+
+  .mobile-theme-toggle .theme-label {
+    display: none;
+  }
+
   .wizard-controls .button-primary {
     min-width: 145px;
     margin-left: auto;
@@ -879,6 +1030,10 @@ a:hover {
   .wizard-controls .button-back {
     min-width: 80px;
     padding: 9px 10px;
+  }
+
+  #nextStep[hidden] {
+    display: none;
   }
 
   .page-footer {
@@ -924,5 +1079,66 @@ a:hover {
     scroll-behavior: auto !important;
     animation-duration: .01ms !important;
     transition-duration: .01ms !important;
+  }
+
+  :root[data-theme="dark"] .field input::placeholder,
+  :root[data-theme="dark"] #passwordOutput::placeholder {
+    color: #91a2ba;
+  }
+
+  :root[data-theme="dark"] .warning-message {
+    color: #f3c575;
+  }
+
+  :root[data-theme="dark"] .error-message {
+    color: #ff9da5;
+  }
+
+  :root[data-theme="dark"] .success-message {
+    color: #82ddb8;
+  }
+
+  :root[data-theme="dark"] .add-app-choice {
+    border-color: #526985;
+  }
+
+  :root[data-theme="dark"] .app-icon,
+  :root[data-theme="dark"] .add-app-icon {
+    background: #253a59;
+  }
+
+  :root[data-theme="dark"] .remove-app {
+    background: #24354c;
+    color: var(--ink);
+  }
+
+  :root[data-theme="dark"] .wizard-controls {
+    background: rgba(17, 29, 48, .96);
+  }
+
+  :root[data-theme="dark"] .button-secondary:hover:not(:disabled),
+  :root[data-theme="dark"] .button-back:hover {
+    background: #253a59;
+  }
+
+  :root[data-theme="dark"] .warning-icon {
+    background: #533f27;
+    color: #f3c575;
+  }
+
+  :root[data-theme="dark"] .progress-segment {
+    background: #35465f;
+  }
+
+  :root[data-theme="dark"] .progress-segment.active {
+    background: var(--blue);
+  }
+
+  :root[data-theme="dark"] .icon-button {
+    color: var(--ink);
+  }
+
+  :root[data-theme="dark"] .app-choice:hover {
+    border-color: #6687b5;
   }
 }

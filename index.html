@@ -3,21 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6f8fb">
+  <meta name="theme-color" content="#eff4ff">
   <title>Wachtwoord</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="index.html" aria-label="Wachtwoord startpagina">
-      <span class="brand-mark" aria-hidden="true">W</span>
-      <span>Wachtwoord</span>
-    </a>
+    <button type="button" class="theme-toggle desktop-theme-toggle" aria-label="Donkere modus inschakelen" aria-pressed="false">
+      <span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">Donkere modus</span>
+    </button>
   </header>
 
   <main class="page-shell">
-    <h1 class="page-title">Wachtwoord maken</h1>
     <div class="wizard-progress" aria-label="Voortgang">
       <span id="stepLabel">Stap 1 van 3</span>
       <div class="progress-track" aria-hidden="true">
@@ -44,6 +42,8 @@
           <label class="visually-hidden" for="pubKey">E-mailadres</label>
           <span class="field-icon" aria-hidden="true">@</span>
           <input type="email" id="pubKey" name="pubKey" inputmode="email" autocomplete="email" placeholder="E-mailadres" aria-label="E-mailadres" autocapitalize="none" spellcheck="false">
+          <p id="emailWarning" class="field-message warning-message" role="status" hidden>Dit lijkt geen volledig e-mailadres. Controleer de spelling.</p>
+          <p id="emailProfileStatus" class="field-message error-message" role="status" hidden></p>
         </div>
 
         <div class="field icon-field">
@@ -53,6 +53,7 @@
           </span>
           <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Hoofdwachtwoord" aria-label="Hoofdwachtwoord">
         </div>
+        <p id="passwordStatus" class="field-message" role="status" hidden></p>
 
         <fieldset class="password-purpose">
           <legend>Waarvoor gebruik je dit?</legend>
@@ -72,6 +73,7 @@
             <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8 2 2-2 2 2 2-3 3-2-2-3.5 3.5"/></svg>
           </span>
           <input type="password" id="repeatPassword" name="repeatPassword" autocomplete="new-password" placeholder="Herhaal je hoofdwachtwoord" aria-label="Herhaal je hoofdwachtwoord">
+          <p id="repeatPasswordStatus" class="field-message" role="status" hidden></p>
         </div>
       </section>
 
@@ -98,8 +100,9 @@
         <details class="settings">
           <summary>Geavanceerde instellingen</summary>
           <div id="passwordSettings" class="settings-content">
+            <p class="settings-description">De standaardinstellingen werken voor de meeste websites. Pas ze alleen aan als dat nodig is.</p>
             <div class="field">
-              <label for="passwordLength">Lengte</label>
+              <label for="passwordLength">Wachtwoordlengte</label>
               <div class="setting-control">
                 <input type="number" id="passwordLength" min="4" max="48" value="20" inputmode="numeric">
                 <span>tekens <span class="setting-default">(standaard 20)</span></span>
@@ -107,12 +110,13 @@
             </div>
             <label class="check-row" for="includeSpecial">
               <input type="checkbox" id="includeSpecial" checked>
-              <span>Speciale tekens gebruiken</span>
+              <span><strong>Speciale tekens</strong><small>Voeg tekens zoals ! en # toe</small></span>
             </label>
           </div>
           <div id="pinSettings" class="settings-content" hidden>
+            <p class="settings-description">Kies hoeveel cijfers je pincode bevat.</p>
             <div class="field">
-              <label for="pinLength">Lengte</label>
+              <label for="pinLength">Pincode-lengte</label>
               <div class="setting-control">
                 <input type="number" id="pinLength" min="4" max="12" value="6" inputmode="numeric">
                 <span>cijfers <span class="setting-default">(standaard 6)</span></span>
@@ -129,6 +133,7 @@
         </div>
 
         <div id="applicationIcons" class="app-grid" aria-label="Beschikbare websites en apps"></div>
+        <button type="button" id="expandApps" class="expand-apps" hidden>Toon alle apps</button>
 
         <section class="result-card" aria-labelledby="resultTitle">
           <div class="result-heading">
@@ -150,6 +155,9 @@
     </section>
 
     <div class="wizard-controls" aria-label="Stapnavigatie">
+      <button type="button" class="theme-toggle mobile-theme-toggle" aria-label="Donkere modus inschakelen" aria-pressed="false">
+        <span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">Thema</span>
+      </button>
       <button type="button" id="backStep" class="button button-back" hidden>Terug</button>
       <button type="button" id="nextStep" class="button button-primary">Volgende</button>
     </div>
@@ -161,8 +169,6 @@
 
   <dialog id="appDialog" class="app-dialog">
     <form id="appDialogForm" class="dialog-content">
-      <button type="button" class="dialog-close" id="closeAppDialog" aria-label="Sluiten">×</button>
-      <div class="dialog-icon" aria-hidden="true">＋</div>
       <h2>Website of app toevoegen</h2>
       <div class="field">
         <label for="newAppUrl">Websiteadres</label>
