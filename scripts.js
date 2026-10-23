@@ -7,6 +7,74 @@ const DEFAULT_APPLICATIONS = [
 
 let applications = [];
 let selectedApplication = null;
+let emailProfile = null;
+let currentStep = 1;
+let generationRequest = 0;
+let confirmationResolver = null;
+
+function normalizeEmail(value) {
+  return value.replace(/\s/g, '').toLowerCase();
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+async function hashEmail(email) {
+  const bytes = new TextEncoder().encode(email);
+  const hash = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function maskEmail(email) {
+  const [local, domain] = email.split('@');
+  const labels = domain.split('.');
+  const suffix = labels.length > 2 && labels.at(-1).length === 2
+    ? labels.slice(-2).join('.')
+    : labels.at(-1);
+  const localMask = local.length > 1 ? `${local[0]}***${local.at(-1)}` : `${local[0]}***`;
+  return `${localMask}@***.${suffix}`;
+}
+
+function displayEmailProfile() {
+  const savedEmail = document.getElementById('savedEmail');
+  savedEmail.hidden = !emailProfile;
+  document.getElementById('maskedEmail').textContent = emailProfile ? emailProfile.masked : '';
+}
+
+async function setEmailProfile(email) {
+  const hash = await hashEmail(email);
+  if (emailProfile) return emailProfile.hash === hash;
+
+  emailProfile = { hash, masked: maskEmail(email) };
+  localStorage.setItem('emailProfile', JSON.stringify(emailProfile));
+  localStorage.removeItem('key');
+  displayEmailProfile();
+  return true;
+}
+
+async function loadEmailProfile() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('emailProfile'));
+    if (saved && /^[a-f0-9]{64}$/.test(saved.hash) && typeof saved.masked === 'string') {
+      emailProfile = { hash: saved.hash, masked: saved.masked };
+    }
+  } catch {
+    localStorage.removeItem('emailProfile');
+  }
+
+  const legacyEmail = localStorage.getItem('key');
+  if (legacyEmail) {
+    const normalized = normalizeEmail(legacyEmail);
+    if (!emailProfile && isValidEmail(normalized)) {
+      await setEmailProfile(normalized);
+    } else {
+      localStorage.removeItem('key');
+    }
+  }
+  localStorage.removeItem('key');
+  displayEmailProfile();
+}
 
 function normalizeWebsiteUrl(value) {
   const text = value.trim();
@@ -26,9 +94,7 @@ function normalizeWebsiteUrl(value) {
 
 function deriveAppName(url) {
   const labels = url.hostname.toLowerCase().replace(/^www\./, '').split('.');
-  if (labels.length === 1 || /^\d+(?:\.\d+){3}$/.test(url.hostname)) {
-    return url.hostname;
-  }
+  if (labels.length === 1 || /^\d+(?:\.\d+){3}$/.test(url.hostname)) return url.hostname;
   const compoundSuffixes = ['co.uk', 'org.uk', 'gov.uk', 'com.au', 'net.au', 'com.br', 'co.nz', 'co.jp', 'com.cn'];
   const suffix = labels.slice(-2).join('.');
   const index = compoundSuffixes.includes(suffix) ? labels.length - 3 : labels.length - 2;
@@ -54,7 +120,6 @@ function loadApplicationsFromLocalStorage() {
         const knownApp = DEFAULT_APPLICATIONS.find(item => item.key === makeAppKey(app));
         return knownApp || { name: app, key: makeAppKey(app), url: '', logo: `logos/${app.toLowerCase().replace(/\s+/g, '_')}.png` };
       }
-
       if (!app || typeof app.name !== 'string') return null;
       const url = typeof app.url === 'string' ? normalizeWebsiteUrl(app.url) : null;
       return {
@@ -68,8 +133,7 @@ function loadApplicationsFromLocalStorage() {
     applications = DEFAULT_APPLICATIONS.map(app => ({ ...app }));
     saveApplications();
   }
-
-  applications.forEach(createApplicationIcon);
+  renderApplicationIcons();
 }
 
 function saveApplications() {
@@ -77,7 +141,6 @@ function saveApplications() {
 }
 
 function createApplicationIcon(app) {
-  const appIcons = document.getElementById('applicationIcons');
   const item = document.createElement('div');
   item.className = 'app-item';
 
@@ -115,39 +178,63 @@ function createApplicationIcon(app) {
   remove.setAttribute('aria-label', `Verwijder ${app.name}`);
   remove.title = `Verwijder ${app.name}`;
   remove.textContent = '×';
-  remove.addEventListener('click', () => removeApplication(app, item));
+  remove.addEventListener('click', async () => {
+    const confirmed = await askConfirmation(`Wil je ${app.name} uit je lijst verwijderen?`, 'App verwijderen');
+    if (!confirmed) return;
+    applications = applications.filter(existing => existing !== app);
+    if (selectedApplication === app) {
+      selectedApplication = null;
+      clearGeneratedCode();
+    }
+    saveApplications();
+    renderApplicationIcons();
+  });
   item.appendChild(remove);
-  appIcons.appendChild(item);
+  return item;
+}
+
+function renderApplicationIcons() {
+  const appIcons = document.getElementById('applicationIcons');
+  appIcons.replaceChildren(...applications.map(createApplicationIcon));
+
+  const addItem = document.createElement('div');
+  addItem.className = 'app-item add-app-item';
+  const addButton = document.createElement('button');
+  addButton.type = 'button';
+  addButton.className = 'app-choice add-app-choice';
+  addButton.setAttribute('aria-label', 'Website of app toevoegen');
+  addButton.innerHTML = '<span class="add-app-icon" aria-hidden="true">＋</span><span class="app-name">Toevoegen</span>';
+  addButton.addEventListener('click', openApplicationDialog);
+  addItem.appendChild(addButton);
+  appIcons.appendChild(addItem);
 }
 
 function selectApplication(app, button) {
   selectedApplication = app;
-  document.querySelectorAll('.app-choice').forEach((choice) => {
+  document.querySelectorAll('.app-choice:not(.add-app-choice)').forEach((choice) => {
     const selected = choice === button;
     choice.classList.toggle('selected', selected);
     choice.setAttribute('aria-pressed', String(selected));
   });
+  updateGeneration();
 }
 
-function removeApplication(app, item) {
-  if (!window.confirm(`Wil je ${app.name} uit je lijst verwijderen?`)) return;
-  applications = applications.filter(existing => existing !== app);
-  if (selectedApplication === app) selectedApplication = null;
-  saveApplications();
-  item.remove();
+function openApplicationDialog() {
+  const dialog = document.getElementById('appDialog');
+  dialog.showModal();
+  document.getElementById('newAppUrl').focus();
 }
 
-function addApplication() {
+function closeApplicationDialog() {
+  document.getElementById('appDialog').close();
+}
+
+function addApplication(event) {
+  event.preventDefault();
   const url = normalizeWebsiteUrl(document.getElementById('newAppUrl').value);
   const name = document.getElementById('newAppName').value.trim();
-  if (!url) {
-    showPopup('Vul een geldig websiteadres in, bijvoorbeeld voorbeeld.nl.', 3000);
-    document.getElementById('newAppUrl').focus();
-    return;
-  }
-  if (!name) {
-    showPopup('Vul een naam voor de app in.', 2500);
-    document.getElementById('newAppName').focus();
+  if (!url || !name) {
+    showPopup('Controleer het websiteadres en de naam.', 2500);
     return;
   }
 
@@ -163,146 +250,306 @@ function addApplication() {
 
   applications.push(app);
   saveApplications();
-  createApplicationIcon(app);
-  document.getElementById('newAppForm').hidden = true;
-  document.getElementById('newAppUrl').value = '';
-  document.getElementById('newAppName').value = '';
-  document.getElementById('newAppName').dataset.touched = 'false';
+  renderApplicationIcons();
+  closeApplicationDialog();
+  document.getElementById('appDialogForm').reset();
+  const addedButton = [...document.querySelectorAll('.app-choice:not(.add-app-choice)')]
+    .find(button => button.getAttribute('aria-label') === `Kies ${app.name}`);
+  if (addedButton) selectApplication(app, addedButton);
   showPopup(`${name} is toegevoegd.`, 2000);
-  document.querySelector('#applicationIcons .app-item:last-child .app-choice')?.focus();
 }
 
-function toggleCredentialSettings() {
+function askConfirmation(message, title = 'Weet je het zeker?', confirmLabel = 'Wissen') {
+  const dialog = document.getElementById('confirmDialog');
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMessage').textContent = message;
+  document.getElementById('acceptConfirm').textContent = confirmLabel;
+  dialog.showModal();
+  return new Promise(resolve => {
+    confirmationResolver = resolve;
+  });
+}
+
+function resolveConfirmation(confirmed) {
+  document.getElementById('confirmDialog').close();
+  if (confirmationResolver) {
+    confirmationResolver(confirmed);
+    confirmationResolver = null;
+  }
+}
+
+function emailInputValue() {
+  return normalizeEmail(document.getElementById('pubKey').value);
+}
+
+function stepOneIsValid() {
+  const email = emailInputValue();
+  const password = document.getElementById('password').value;
+  const isNew = document.querySelector('input[name="passwordPurpose"]:checked').value === 'new';
+  const repeated = document.getElementById('repeatPassword').value;
+  return isValidEmail(email) && Boolean(password) && (!isNew || (Boolean(repeated) && repeated === password));
+}
+
+function updateStepControls() {
+  const back = document.getElementById('backStep');
+  const next = document.getElementById('nextStep');
+  document.getElementById('stepLabel').textContent = `Stap ${currentStep} van 3`;
+  document.querySelectorAll('.progress-segment').forEach((segment) => {
+    segment.classList.toggle('active', Number(segment.dataset.progress) <= currentStep);
+  });
+  document.querySelectorAll('.wizard-step').forEach((section) => {
+    const active = Number(section.dataset.step) === currentStep;
+    section.classList.toggle('active-step', active);
+    section.setAttribute('aria-hidden', String(!active));
+  });
+
+  back.hidden = currentStep === 1;
+  if (currentStep === 1) {
+    next.textContent = 'Volgende';
+    next.disabled = !stepOneIsValid();
+  } else if (currentStep === 2) {
+    next.textContent = 'Volgende';
+    next.disabled = false;
+  } else {
+    const type = document.querySelector('input[name="credentialType"]:checked').value;
+    next.textContent = type === 'pin' ? 'Kopieer pincode' : 'Kopieer wachtwoord';
+    next.disabled = !document.getElementById('passwordOutput').value;
+  }
+}
+
+function goToStep(step) {
+  currentStep = Math.max(1, Math.min(3, step));
+  updateStepControls();
+  if (window.matchMedia('(max-width: 700px)').matches) {
+    document.querySelector('.wizard-progress').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  if (currentStep === 3) updateGeneration();
+}
+
+async function continueFromStepOne() {
+  if (!stepOneIsValid()) {
+    showPopup('Vul een geldig e-mailadres en hoofdwachtwoord in.', 2500);
+    return;
+  }
+  const saved = await setEmailProfile(emailInputValue());
+  if (!saved) {
+    showPopup(`Dit e-mailadres is opgeslagen als ${emailProfile.masked}. Wis het eerst om een ander adres te gebruiken.`, 4000);
+    return;
+  }
+  goToStep(2);
+}
+
+function updateCredentialType() {
   const type = document.querySelector('input[name="credentialType"]:checked').value;
   document.getElementById('passwordSettings').hidden = type !== 'password';
   document.getElementById('pinSettings').hidden = type !== 'pin';
-  document.querySelector('.generate-button').textContent = type === 'pin' ? 'Genereer mijn pincode' : 'Genereer mijn wachtwoord';
   document.getElementById('passwordOutput').placeholder = type === 'pin' ? 'Je pincode verschijnt hier' : 'Je wachtwoord verschijnt hier';
+  document.getElementById('passwordOutput').setAttribute('aria-label', type === 'pin' ? 'Gegenereerde pincode' : 'Gegenereerd wachtwoord');
+  updateStepControls();
+  updateGeneration();
 }
 
-function clearResult() {
+function clearGeneratedCode() {
   document.getElementById('passwordOutput').value = '';
-  document.getElementById('password').value = '';
-  document.getElementById('repeatPassword').value = '';
-  document.getElementById('passwordOutput').type = 'password';
-  const type = document.querySelector('input[name="credentialType"]:checked').value;
-  const toggle = document.getElementById('password-toggle');
-  toggle.setAttribute('aria-label', type === 'pin' ? 'Pincode tonen' : 'Wachtwoord tonen');
-  toggle.setAttribute('aria-pressed', 'false');
-  toggle.disabled = true;
   document.getElementById('copyBtn').disabled = true;
-  showPopup('De velden zijn gewist.', 2000);
+  document.getElementById('password-toggle').disabled = true;
+  document.getElementById('passwordOutput').type = 'password';
+  document.getElementById('password-toggle').classList.remove('visible-password');
+  updateStepControls();
 }
 
-window.addEventListener('load', () => {
-  loadApplicationsFromLocalStorage();
-  document.getElementById('pubKey').value = localStorage.getItem('key') || '';
-  toggleCredentialSettings();
-});
-
-document.getElementById('pubKey').addEventListener('input', (event) => {
-  localStorage.setItem('key', event.target.value);
-});
-
-document.querySelectorAll('input[name="credentialType"]').forEach(input => {
-  input.addEventListener('change', toggleCredentialSettings);
-});
-
-document.getElementById('addNewIcon').addEventListener('click', () => {
-  const form = document.getElementById('newAppForm');
-  form.hidden = !form.hidden;
-  if (!form.hidden) document.getElementById('newAppUrl').focus();
-});
-document.getElementById('cancelAddApp').addEventListener('click', () => {
-  document.getElementById('newAppForm').hidden = true;
-});
-document.getElementById('saveNewApp').addEventListener('click', addApplication);
-document.getElementById('newAppUrl').addEventListener('input', (event) => {
-  const nameInput = document.getElementById('newAppName');
-  if (nameInput.dataset.touched !== 'true') {
-    const url = normalizeWebsiteUrl(event.target.value);
-    nameInput.value = url ? deriveAppName(url) : '';
-  }
-});
-document.getElementById('newAppName').addEventListener('input', (event) => {
-  event.target.dataset.touched = 'true';
-});
-
-document.getElementById('userInfo').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const pubKey = form.elements.pubKey.value;
-  const password = form.elements.password.value;
-  const repeatPassword = form.elements.repeatPassword.value;
-  const type = form.elements.credentialType.value;
-
-  if (repeatPassword && password !== repeatPassword) {
-    showPopup('De hoofdwachtwoorden zijn niet hetzelfde.', 2500);
-    return;
-  }
-  if (!selectedApplication) {
-    showPopup('Kies eerst een website of app.', 2500);
-    document.getElementById('applicationIcons').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-
+async function updateGeneration() {
+  const request = ++generationRequest;
+  const email = emailInputValue();
+  const password = document.getElementById('password').value;
+  const isNew = document.querySelector('input[name="passwordPurpose"]:checked').value === 'new';
+  const repeated = document.getElementById('repeatPassword').value;
+  const type = document.querySelector('input[name="credentialType"]:checked').value;
   const lengthField = document.getElementById(type === 'pin' ? 'pinLength' : 'passwordLength');
   const length = Number(lengthField.value);
   const min = Number(lengthField.min);
   const max = Number(lengthField.max);
-  if (!Number.isInteger(length) || length < min || length > max) {
-    showPopup(`Kies een lengte tussen ${min} en ${max}.`, 2500);
-    lengthField.focus();
+
+  if (!isValidEmail(email) || !password || (isNew && (!repeated || repeated !== password)) ||
+      !selectedApplication || !Number.isInteger(length) || length < min || length > max) {
+    clearGeneratedCode();
     return;
   }
 
   try {
-    const hash = await createHash(`${pubKey}${password}${selectedApplication.key}`);
+    if (!await setEmailProfile(email)) {
+      clearGeneratedCode();
+      return;
+    }
+    const hash = await createHash(`${email}${password}${selectedApplication.key}`);
+    if (request !== generationRequest) return;
     document.getElementById('passwordOutput').value = formatHash(type, hash, {
       length,
       includeSpecial: document.getElementById('includeSpecial').checked
     });
-    document.getElementById('passwordOutput').setAttribute('aria-label', type === 'pin' ? 'Gegenereerde pincode' : 'Gegenereerd wachtwoord');
-    document.getElementById('password-toggle').setAttribute('aria-label', type === 'pin' ? 'Pincode tonen' : 'Wachtwoord tonen');
     document.getElementById('password-toggle').disabled = false;
     document.getElementById('copyBtn').disabled = false;
-    showPopup(type === 'pin' ? 'Je pincode is klaar.' : 'Je wachtwoord is klaar.', 2000);
+    updateStepControls();
   } catch {
+    clearGeneratedCode();
     showPopup('Er ging iets mis bij het maken. Probeer het opnieuw.', 3000);
   }
-});
+}
 
-document.getElementById('copyBtn').addEventListener('click', async () => {
+async function copyGeneratedCode() {
   const output = document.getElementById('passwordOutput');
   if (!output.value) return;
   try {
     await navigator.clipboard.writeText(output.value);
-    showPopup('Gekopieerd. Plak het meteen op de website.', 2500);
+    showPopup('Gekopieerd naar het klembord.', 2000);
   } catch {
     output.type = 'text';
     output.select();
     const copied = document.execCommand('copy');
     if (copied) {
       output.type = 'password';
-      window.getSelection()?.removeAllRanges();
-      showPopup('Gekopieerd. Plak het meteen op de website.', 2500);
+      showPopup('Gekopieerd naar het klembord.', 2000);
     } else {
       output.type = 'text';
       output.focus();
       output.select();
-      showPopup('Kopiëren lukte niet. De code staat geselecteerd; kopieer deze handmatig.', 3500);
+      showPopup('Kopiëren lukte niet. De code staat geselecteerd.', 3000);
     }
   }
-});
+}
 
-document.getElementById('clearBtn').addEventListener('click', clearResult);
-document.getElementById('password-toggle').addEventListener('click', (event) => {
-  const output = document.getElementById('passwordOutput');
-  const toggle = event.currentTarget;
-  const visible = output.type === 'password';
-  output.type = visible ? 'text' : 'password';
-  const type = document.querySelector('input[name="credentialType"]:checked').value;
-  const label = type === 'pin' ? 'Pincode' : 'Wachtwoord';
-  toggle.setAttribute('aria-label', `${label} ${visible ? 'verbergen' : 'tonen'}`);
-  toggle.setAttribute('aria-pressed', String(visible));
+async function clearEverything() {
+  const confirmed = await askConfirmation(
+    'De code en ingevulde gegevens worden gewist. Het afgeschermde e-mailadres blijft bewaard.',
+    'Alles wissen'
+  );
+  if (!confirmed) return;
+
+  try {
+    await navigator.clipboard.writeText('');
+  } catch {
+    // Clipboard clearing is not supported by every browser.
+  }
+  document.getElementById('pubKey').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('repeatPassword').value = '';
+  document.querySelector('input[name="passwordPurpose"][value="existing"]').checked = true;
+  document.getElementById('repeatPasswordField').hidden = true;
+  document.querySelector('input[name="credentialType"][value="password"]').checked = true;
+  document.getElementById('passwordLength').value = '20';
+  document.getElementById('pinLength').value = '6';
+  document.getElementById('includeSpecial').checked = true;
+  selectedApplication = null;
+  document.querySelectorAll('.app-choice').forEach(choice => {
+    choice.classList.remove('selected');
+    choice.setAttribute('aria-pressed', 'false');
+  });
+  clearGeneratedCode();
+  updateCredentialType();
+  goToStep(1);
+  document.getElementById('pubKey').focus();
+}
+
+async function clearEmailProfile() {
+  const confirmed = await askConfirmation(
+    'Het opgeslagen e-mailadres wordt volledig verwijderd. Je kunt daarna een nieuw e-mailadres instellen.',
+    'E-mailadres wissen'
+  );
+  if (!confirmed) return;
+
+  localStorage.removeItem('emailProfile');
+  localStorage.removeItem('key');
+  emailProfile = null;
+  document.getElementById('pubKey').value = '';
+  displayEmailProfile();
+  clearGeneratedCode();
+  goToStep(1);
+  document.getElementById('pubKey').focus();
+}
+
+function initializeEvents() {
+  const emailInput = document.getElementById('pubKey');
+  emailInput.addEventListener('input', () => {
+    const normalized = normalizeEmail(emailInput.value);
+    if (emailInput.value !== normalized) {
+      const start = emailInput.selectionStart;
+      emailInput.value = normalized;
+      emailInput.setSelectionRange(start, start);
+    }
+    updateStepControls();
+    updateGeneration();
+  });
+
+  document.getElementById('password').addEventListener('input', () => {
+    updateStepControls();
+    updateGeneration();
+  });
+  document.getElementById('repeatPassword').addEventListener('input', updateGeneration);
+
+  document.querySelectorAll('input[name="passwordPurpose"]').forEach(input => {
+    input.addEventListener('change', () => {
+      const isNew = input.value === 'new' && input.checked;
+      document.getElementById('repeatPasswordField').hidden = !isNew;
+      document.getElementById('password').autocomplete = isNew ? 'new-password' : 'current-password';
+      updateStepControls();
+      updateGeneration();
+      if (isNew) document.getElementById('repeatPassword').focus();
+    });
+  });
+  document.querySelectorAll('input[name="credentialType"]').forEach(input => {
+    input.addEventListener('change', updateCredentialType);
+  });
+  document.getElementById('passwordLength').addEventListener('input', updateGeneration);
+  document.getElementById('pinLength').addEventListener('input', updateGeneration);
+  document.getElementById('includeSpecial').addEventListener('change', updateGeneration);
+
+  document.getElementById('nextStep').addEventListener('click', async () => {
+    if (currentStep === 1) await continueFromStepOne();
+    else if (currentStep === 2) goToStep(3);
+    else await copyGeneratedCode();
+  });
+  document.getElementById('backStep').addEventListener('click', () => goToStep(currentStep - 1));
+  document.getElementById('copyBtn').addEventListener('click', copyGeneratedCode);
+  document.getElementById('clearBtn').addEventListener('click', clearEverything);
+  document.getElementById('clearEmailBtn').addEventListener('click', clearEmailProfile);
+  document.getElementById('password-toggle').addEventListener('click', (event) => {
+    const output = document.getElementById('passwordOutput');
+    const button = event.currentTarget;
+    const isVisible = output.type === 'password';
+    output.type = isVisible ? 'text' : 'password';
+    button.classList.toggle('visible-password', isVisible);
+    const type = document.querySelector('input[name="credentialType"]:checked').value;
+    const name = type === 'pin' ? 'Pincode' : 'Wachtwoord';
+    button.setAttribute('aria-label', `${name} ${isVisible ? 'verbergen' : 'tonen'}`);
+    button.setAttribute('aria-pressed', String(isVisible));
+  });
+
+  document.getElementById('appDialogForm').addEventListener('submit', addApplication);
+  document.getElementById('newAppUrl').addEventListener('input', (event) => {
+    const nameInput = document.getElementById('newAppName');
+    if (nameInput.dataset.touched !== 'true') {
+      const url = normalizeWebsiteUrl(event.target.value);
+      nameInput.value = url ? deriveAppName(url) : '';
+    }
+  });
+  document.getElementById('newAppName').addEventListener('input', (event) => {
+    event.target.dataset.touched = 'true';
+  });
+  document.getElementById('cancelAddApp').addEventListener('click', closeApplicationDialog);
+  document.getElementById('closeAppDialog').addEventListener('click', closeApplicationDialog);
+
+  document.getElementById('cancelConfirm').addEventListener('click', () => resolveConfirmation(false));
+  document.getElementById('acceptConfirm').addEventListener('click', () => resolveConfirmation(true));
+  document.getElementById('confirmDialog').addEventListener('cancel', (event) => {
+    event.preventDefault();
+    resolveConfirmation(false);
+  });
+}
+
+window.addEventListener('load', async () => {
+  loadApplicationsFromLocalStorage();
+  initializeEvents();
+  await loadEmailProfile();
+  updateCredentialType();
+  updateStepControls();
 });
