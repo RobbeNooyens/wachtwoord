@@ -41,7 +41,7 @@
         <div class="field icon-field">
           <label class="visually-hidden" for="pubKey">E-mailadres</label>
           <span class="field-icon" aria-hidden="true">@</span>
-          <input type="email" id="pubKey" name="pubKey" inputmode="email" autocomplete="email" placeholder="E-mailadres" aria-label="E-mailadres" autocapitalize="none" spellcheck="false">
+          <input type="email" id="pubKey" name="pubKey" inputmode="email" autocomplete="email" placeholder="E-mailadres" aria-label="E-mailadres" aria-describedby="emailWarning emailProfileStatus" autocapitalize="none" spellcheck="false">
           <p id="emailWarning" class="field-message warning-message" role="status" hidden>Dit lijkt geen volledig e-mailadres. Controleer de spelling.</p>
           <p id="emailProfileStatus" class="field-message error-message" role="status" hidden></p>
         </div>
@@ -51,7 +51,7 @@
           <span class="field-icon key-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8 2 2-2 2 2 2-3 3-2-2-3.5 3.5"/></svg>
           </span>
-          <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Hoofdwachtwoord" aria-label="Hoofdwachtwoord">
+          <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Hoofdwachtwoord" aria-label="Hoofdwachtwoord" aria-describedby="passwordStatus">
         </div>
         <p id="passwordStatus" class="field-message" role="status" hidden></p>
 
@@ -72,7 +72,7 @@
           <span class="field-icon key-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8 2 2-2 2 2 2-3 3-2-2-3.5 3.5"/></svg>
           </span>
-          <input type="password" id="repeatPassword" name="repeatPassword" autocomplete="new-password" placeholder="Herhaal je hoofdwachtwoord" aria-label="Herhaal je hoofdwachtwoord">
+          <input type="password" id="repeatPassword" name="repeatPassword" autocomplete="new-password" placeholder="Herhaal je hoofdwachtwoord" aria-label="Herhaal je hoofdwachtwoord" aria-describedby="repeatPasswordStatus">
           <p id="repeatPasswordStatus" class="field-message" role="status" hidden></p>
         </div>
       </section>
