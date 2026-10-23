@@ -149,6 +149,10 @@ function createApplicationIcon(app) {
   button.className = 'app-choice';
   button.setAttribute('aria-pressed', 'false');
   button.setAttribute('aria-label', `Kies ${app.name}`);
+  if (selectedApplication === app) {
+    button.classList.add('selected');
+    button.setAttribute('aria-pressed', 'true');
+  }
 
   const icon = document.createElement('span');
   icon.className = 'app-icon';
@@ -253,6 +257,7 @@ function addApplication(event) {
   renderApplicationIcons();
   closeApplicationDialog();
   document.getElementById('appDialogForm').reset();
+  document.getElementById('newAppName').dataset.touched = 'false';
   const addedButton = [...document.querySelectorAll('.app-choice:not(.add-app-choice)')]
     .find(button => button.getAttribute('aria-label') === `Kies ${app.name}`);
   if (addedButton) selectApplication(app, addedButton);
@@ -293,6 +298,7 @@ function stepOneIsValid() {
 function updateStepControls() {
   const back = document.getElementById('backStep');
   const next = document.getElementById('nextStep');
+  const isMobile = window.matchMedia('(max-width: 700px)').matches;
   document.getElementById('stepLabel').textContent = `Stap ${currentStep} van 3`;
   document.querySelectorAll('.progress-segment').forEach((segment) => {
     segment.classList.toggle('active', Number(segment.dataset.progress) <= currentStep);
@@ -300,7 +306,7 @@ function updateStepControls() {
   document.querySelectorAll('.wizard-step').forEach((section) => {
     const active = Number(section.dataset.step) === currentStep;
     section.classList.toggle('active-step', active);
-    section.setAttribute('aria-hidden', String(!active));
+    section.setAttribute('aria-hidden', String(isMobile && !active));
   });
 
   back.hidden = currentStep === 1;
@@ -345,17 +351,29 @@ function updateCredentialType() {
   document.getElementById('pinSettings').hidden = type !== 'pin';
   document.getElementById('passwordOutput').placeholder = type === 'pin' ? 'Je pincode verschijnt hier' : 'Je wachtwoord verschijnt hier';
   document.getElementById('passwordOutput').setAttribute('aria-label', type === 'pin' ? 'Gegenereerde pincode' : 'Gegenereerd wachtwoord');
+  document.getElementById('resultTitle').textContent = type === 'pin' ? 'Jouw pincode' : 'Jouw wachtwoord';
+  setOutputVisibility(document.getElementById('passwordOutput').type === 'text');
   updateStepControls();
   updateGeneration();
 }
 
 function clearGeneratedCode() {
+  generationRequest += 1;
   document.getElementById('passwordOutput').value = '';
   document.getElementById('copyBtn').disabled = true;
   document.getElementById('password-toggle').disabled = true;
   document.getElementById('passwordOutput').type = 'password';
-  document.getElementById('password-toggle').classList.remove('visible-password');
+  setOutputVisibility(false);
   updateStepControls();
+}
+
+function setOutputVisibility(visible) {
+  const button = document.getElementById('password-toggle');
+  const type = document.querySelector('input[name="credentialType"]:checked').value;
+  const name = type === 'pin' ? 'Pincode' : 'Wachtwoord';
+  button.classList.toggle('visible-password', visible);
+  button.setAttribute('aria-label', `${name} ${visible ? 'verbergen' : 'tonen'}`);
+  button.setAttribute('aria-pressed', String(visible));
 }
 
 async function updateGeneration() {
@@ -404,10 +422,12 @@ async function copyGeneratedCode() {
     showPopup('Gekopieerd naar het klembord.', 2000);
   } catch {
     output.type = 'text';
+    setOutputVisibility(true);
     output.select();
     const copied = document.execCommand('copy');
     if (copied) {
       output.type = 'password';
+      setOutputVisibility(false);
       showPopup('Gekopieerd naar het klembord.', 2000);
     } else {
       output.type = 'text';
@@ -514,14 +534,9 @@ function initializeEvents() {
   document.getElementById('clearEmailBtn').addEventListener('click', clearEmailProfile);
   document.getElementById('password-toggle').addEventListener('click', (event) => {
     const output = document.getElementById('passwordOutput');
-    const button = event.currentTarget;
     const isVisible = output.type === 'password';
     output.type = isVisible ? 'text' : 'password';
-    button.classList.toggle('visible-password', isVisible);
-    const type = document.querySelector('input[name="credentialType"]:checked').value;
-    const name = type === 'pin' ? 'Pincode' : 'Wachtwoord';
-    button.setAttribute('aria-label', `${name} ${isVisible ? 'verbergen' : 'tonen'}`);
-    button.setAttribute('aria-pressed', String(isVisible));
+    setOutputVisibility(isVisible);
   });
 
   document.getElementById('appDialogForm').addEventListener('submit', addApplication);
