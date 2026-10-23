@@ -12,8 +12,11 @@ let currentStep = 1;
 let generationRequest = 0;
 let confirmationResolver = null;
 let appsExpanded = false;
+let displayedApplications = [];
+let activeAppLetter = null;
 
 const MAX_VISIBLE_APPS = 30;
+const APP_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 function normalizeEmail(value) {
   return value.replace(/\s/g, '').toLowerCase();
@@ -28,8 +31,8 @@ function applyTheme(mode, persist = true) {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   if (persist) localStorage.setItem('theme', mode);
   document.querySelector('meta[name="theme-color"]').content = dark ? '#111d30' : '#eff4ff';
-  document.querySelectorAll('.theme-select').forEach(select => {
-    select.value = mode;
+  document.querySelectorAll('.theme-button').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.themeChoice === (dark ? 'dark' : 'light')));
   });
 }
 
@@ -162,19 +165,14 @@ function loadApplicationsFromLocalStorage() {
     applications = DEFAULT_APPLICATIONS.map(app => ({ ...app, usageCount: 0, lastUsed: 0 }));
     saveApplications();
   }
+  displayedApplications = [...applications].sort((a, b) =>
+    a.lastUsed - b.lastUsed || applications.indexOf(a) - applications.indexOf(b)
+  );
   renderApplicationIcons();
 }
 
 function saveApplications() {
   localStorage.setItem('applications', JSON.stringify(applications));
-}
-
-function getRankedApplications() {
-  return [...applications].sort((a, b) =>
-    b.usageCount - a.usageCount ||
-    b.lastUsed - a.lastUsed ||
-    applications.indexOf(a) - applications.indexOf(b)
-  );
 }
 
 function createApplicationIcon(app) {
@@ -223,6 +221,7 @@ function createApplicationIcon(app) {
     const confirmed = await askConfirmation(`Wil je ${app.name} uit je lijst verwijderen?`, 'App verwijderen');
     if (!confirmed) return;
     applications = applications.filter(existing => existing !== app);
+    displayedApplications = displayedApplications.filter(existing => existing !== app);
     if (selectedApplication === app) {
       selectedApplication = null;
       clearGeneratedCode();
@@ -236,8 +235,10 @@ function createApplicationIcon(app) {
 
 function renderApplicationIcons() {
   const appIcons = document.getElementById('applicationIcons');
-  const rankedApps = getRankedApplications();
-  const visibleApps = appsExpanded ? rankedApps : rankedApps.slice(0, MAX_VISIBLE_APPS);
+  const filteredApps = activeAppLetter
+    ? displayedApplications.filter(app => app.name.trim().charAt(0).toUpperCase() === activeAppLetter)
+    : displayedApplications;
+  const visibleApps = appsExpanded ? filteredApps : filteredApps.slice(0, MAX_VISIBLE_APPS);
   const addItem = document.createElement('div');
   addItem.className = 'app-item add-app-item';
   const addButton = document.createElement('button');
@@ -250,8 +251,8 @@ function renderApplicationIcons() {
   appIcons.replaceChildren(addItem, ...visibleApps.map(createApplicationIcon));
 
   const expandButton = document.getElementById('expandApps');
-  expandButton.hidden = rankedApps.length <= MAX_VISIBLE_APPS;
-  expandButton.textContent = appsExpanded ? 'Toon minder apps' : `Toon alle ${rankedApps.length} apps`;
+  expandButton.hidden = filteredApps.length <= MAX_VISIBLE_APPS;
+  expandButton.textContent = appsExpanded ? 'Toon minder apps' : `Toon alle ${filteredApps.length} apps`;
   expandButton.setAttribute('aria-expanded', String(appsExpanded));
 }
 
@@ -260,11 +261,31 @@ function selectApplication(app, button) {
   app.lastUsed = Date.now();
   saveApplications();
   selectedApplication = app;
-  renderApplicationIcons();
+  const appLetter = app.name.trim().charAt(0).toUpperCase();
+  if (activeAppLetter && appLetter !== activeAppLetter && APP_LETTERS.includes(appLetter)) {
+    activeAppLetter = appLetter;
+    const filter = document.getElementById('appLetterFilter');
+    filter.value = APP_LETTERS.indexOf(appLetter);
+    updateAppLetterDisplay();
+    renderApplicationIcons();
+  } else {
+    document.querySelectorAll('.app-choice:not(.add-app-choice)').forEach(choice => {
+      const isSelected = choice.getAttribute('aria-label') === `Kies ${app.name}`;
+      choice.classList.toggle('selected', isSelected);
+      choice.setAttribute('aria-pressed', String(isSelected));
+    });
+  }
   const selectedButton = [...document.querySelectorAll('.app-choice:not(.add-app-choice)')]
-    .find(choice => choice.getAttribute('aria-label') === button.getAttribute('aria-label'));
+    .find(choice => choice.getAttribute('aria-label') === `Kies ${app.name}`) || button;
   selectedButton?.focus();
   updateGeneration();
+}
+
+function updateAppLetterDisplay() {
+  const filter = document.getElementById('appLetterFilter');
+  const letter = APP_LETTERS[Number(filter.value)];
+  document.getElementById('appLetterValue').value = letter;
+  filter.setAttribute('aria-valuetext', letter);
 }
 
 function openApplicationDialog() {
@@ -291,12 +312,22 @@ function addApplication(event) {
     showPopup('Gebruik een naam met letters of cijfers.', 2500);
     return;
   }
-  if (applications.some(existing => existing.key === app.key)) {
-    showPopup('Deze app staat al in je lijst.', 2500);
+  const existingApp = applications.find(existing => {
+    if (existing.key === app.key) return true;
+    if (!existing.url) return false;
+    return normalizeWebsiteUrl(existing.url)?.origin === url.origin;
+  });
+  if (existingApp) {
+    closeApplicationDialog();
+    document.getElementById('appDialogForm').reset();
+    document.getElementById('newAppName').dataset.touched = 'false';
+    selectApplication(existingApp);
+    showPopup(`${existingApp.name} staat al in je lijst en is geselecteerd.`, 2500);
     return;
   }
 
   applications.push(app);
+  displayedApplications.push(app);
   appsExpanded = true;
   saveApplications();
   renderApplicationIcons();
@@ -598,6 +629,17 @@ function initializeEvents() {
     appsExpanded = !appsExpanded;
     renderApplicationIcons();
   });
+  document.getElementById('appLetterFilter').addEventListener('input', (event) => {
+    activeAppLetter = APP_LETTERS[Number(event.target.value)];
+    updateAppLetterDisplay();
+    appsExpanded = false;
+    renderApplicationIcons();
+  });
+  document.getElementById('letterTicks').replaceChildren(...Array.from(APP_LETTERS, () => {
+    const tick = document.createElement('span');
+    tick.className = 'letter-tick';
+    return tick;
+  }));
 
   document.getElementById('nextStep').addEventListener('click', async () => {
     if (currentStep === 1) await continueFromStepOne();
@@ -630,8 +672,8 @@ function initializeEvents() {
 
   document.getElementById('cancelConfirm').addEventListener('click', () => resolveConfirmation(false));
   document.getElementById('acceptConfirm').addEventListener('click', () => resolveConfirmation(true));
-  document.querySelectorAll('.theme-select').forEach(select => {
-    select.addEventListener('change', () => applyTheme(select.value));
+  document.querySelectorAll('.theme-button').forEach(button => {
+    button.addEventListener('click', () => applyTheme(button.dataset.themeChoice));
   });
   document.getElementById('confirmDialog').addEventListener('cancel', (event) => {
     event.preventDefault();

@@ -539,6 +539,68 @@ a:hover {
   gap: 11px;
 }
 
+.app-filter {
+  margin: 0 0 19px;
+  padding: 13px 15px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft-surface);
+}
+
+.app-filter-heading,
+.letter-endpoints {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-filter-heading {
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.app-filter-heading output {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+#appLetterFilter {
+  display: block;
+  width: 100%;
+  height: 21px;
+  margin: 0;
+  accent-color: var(--blue);
+  cursor: pointer;
+}
+
+.letter-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin: -2px 7px 4px;
+}
+
+.letter-tick {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #aab8ca;
+}
+
+.letter-endpoints {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
 .app-item {
   position: relative;
   min-width: 0;
@@ -792,7 +854,7 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 11px;
   margin-top: 28px;
   font-size: 14px;
 }
@@ -804,22 +866,52 @@ a:hover {
 .theme-control {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   color: var(--muted);
   font-size: 13px;
 }
 
-.theme-select {
-  max-width: 170px;
-  min-height: 35px;
-  padding: 4px 24px 4px 7px;
+.footer-separator {
+  color: var(--line);
+  font-size: 19px;
+  line-height: 1;
+}
+
+.theme-label {
+  margin-right: 3px;
+}
+
+.theme-button {
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
   border: 0;
-  border-radius: 6px;
+  border-radius: 9px;
   background: transparent;
-  color: var(--blue);
+  color: var(--muted);
   cursor: pointer;
-  font: inherit;
-  font-weight: 700;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.theme-button:hover {
+  background: var(--soft-surface);
+  color: var(--blue);
+}
+
+.theme-button[aria-pressed="true"] {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.theme-button svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 
 .mobile-theme-control {
@@ -1040,20 +1132,11 @@ a:hover {
   }
 
   .mobile-theme-control {
-    display: inline-flex;
+    display: flex;
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    gap: 3px;
-    justify-self: center;
-    white-space: nowrap;
-  }
-
-  .mobile-theme-control .theme-select {
-    max-width: 105px;
-    padding-right: 12px;
-    font-size: 12px;
-    text-align: left;
+    gap: 5px;
   }
 
   .wizard-controls .button-primary {
@@ -1072,21 +1155,28 @@ a:hover {
     padding: 9px 10px;
   }
 
-  .page-footer {
-    flex-direction: column;
-    gap: 7px;
-  }
-
-  .page-footer .theme-control {
-    display: none;
-  }
-
   #nextStep[hidden] {
     display: none;
   }
 
   .page-footer {
+    flex-wrap: wrap;
     margin-top: 25px;
+  }
+
+  .page-footer .theme-control,
+  .page-footer .footer-separator {
+    display: none;
+  }
+
+  .app-filter {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .letter-ticks {
+    margin-right: 6px;
+    margin-left: 6px;
   }
 
   .toast {
