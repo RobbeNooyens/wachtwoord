@@ -19,21 +19,18 @@ function normalizeEmail(value) {
   return value.replace(/\s/g, '').toLowerCase();
 }
 
-function applyTheme(theme) {
-  const dark = theme === 'dark';
-  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-  localStorage.setItem('theme', dark ? 'dark' : 'light');
-  document.querySelector('meta[name="theme-color"]').content = dark ? '#111d30' : '#eff4ff';
-  document.querySelectorAll('.theme-toggle').forEach(button => {
-    button.setAttribute('aria-pressed', String(dark));
-    button.setAttribute('aria-label', dark ? 'Lichte modus inschakelen' : 'Donkere modus inschakelen');
-    button.querySelector('.theme-icon').textContent = dark ? '☀' : '☾';
-    button.querySelector('.theme-label').textContent = dark ? 'Lichte modus' : 'Donkere modus';
-  });
+function emailInputIsSaved() {
+  return Boolean(emailProfile && document.getElementById('pubKey').readOnly);
 }
 
-function toggleTheme() {
-  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+function applyTheme(mode, persist = true) {
+  const dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  if (persist) localStorage.setItem('theme', mode);
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#111d30' : '#eff4ff';
+  document.querySelectorAll('.theme-select').forEach(select => {
+    select.value = mode;
+  });
 }
 
 function isValidEmail(value) {
@@ -59,9 +56,14 @@ function maskEmail(email) {
 }
 
 function displayEmailProfile() {
-  const savedEmail = document.getElementById('savedEmail');
-  savedEmail.hidden = !emailProfile;
-  document.getElementById('maskedEmail').textContent = emailProfile ? emailProfile.masked : '';
+  const emailInput = document.getElementById('pubKey');
+  const clearButton = document.getElementById('clearEmailBtn');
+  emailInput.value = emailProfile ? emailProfile.masked : '';
+  emailInput.readOnly = Boolean(emailProfile);
+  clearButton.hidden = !emailProfile;
+  emailInput.classList.toggle('saved-email-input', Boolean(emailProfile));
+  document.getElementById('emailWarning').hidden = true;
+  emailInput.classList.remove('input-warning');
 }
 
 async function setEmailProfile(email) {
@@ -72,6 +74,7 @@ async function setEmailProfile(email) {
   localStorage.setItem('emailProfile', JSON.stringify(emailProfile));
   localStorage.removeItem('key');
   displayEmailProfile();
+  updateInputFeedback();
   return true;
 }
 
@@ -88,7 +91,7 @@ async function loadEmailProfile() {
   const legacyEmail = localStorage.getItem('key');
   if (legacyEmail) {
     const normalized = normalizeEmail(legacyEmail);
-    if (!emailProfile && isValidEmail(normalized)) {
+    if (!emailProfile) {
       await setEmailProfile(normalized);
     } else {
       localStorage.removeItem('key');
@@ -343,15 +346,9 @@ function updateInputFeedback() {
   const isNew = document.querySelector('input[name="passwordPurpose"]:checked').value === 'new';
   const repeated = document.getElementById('repeatPassword').value;
   const emailWarning = document.getElementById('emailWarning');
-  emailWarning.hidden = Boolean(email) && isValidEmail(email);
-  emailWarning.textContent = email
-    ? 'Dit lijkt geen volledig e-mailadres. Controleer de spelling.'
-    : 'Vul je e-mailadres in om verder te gaan.';
-  document.getElementById('emailProfileStatus').hidden = true;
-
-  const passwordStatus = document.getElementById('passwordStatus');
-  passwordStatus.hidden = Boolean(password);
-  passwordStatus.textContent = password ? '' : 'Vul je hoofdwachtwoord in om verder te gaan.';
+  emailWarning.hidden = emailInputIsSaved() || !email || isValidEmail(email);
+  document.getElementById('pubKey').classList.toggle('input-warning', !emailInputIsSaved() && (!email || !isValidEmail(email)));
+  document.getElementById('password').classList.toggle('input-warning', !password);
 
   const repeatField = document.getElementById('repeatPassword');
   const repeatStatus = document.getElementById('repeatPasswordStatus');
@@ -364,7 +361,7 @@ function updateInputFeedback() {
   repeatStatus.className = `field-message ${match ? 'success-message' : 'error-message'}`;
   repeatStatus.textContent = match
     ? 'Wachtwoorden komen overeen.'
-    : (repeated ? 'Wachtwoorden komen niet overeen.' : 'Herhaal je hoofdwachtwoord om verder te gaan.');
+    : (repeated ? 'Wachtwoorden komen niet overeen.' : 'Herhaal je wachtwoord om verder te gaan.');
 }
 
 function updateStepControls() {
@@ -407,17 +404,9 @@ function goToStep(step) {
 async function continueFromStepOne() {
   if (!stepOneIsValid()) {
     updateInputFeedback();
-    showPopup(!emailInputValue() ? 'Vul je e-mailadres in.' : 'Vul je hoofdwachtwoord in en controleer de bevestiging.', 2500);
     return;
   }
-  const saved = await setEmailProfile(emailInputValue());
-  if (!saved) {
-    const status = document.getElementById('emailProfileStatus');
-    status.textContent = `Dit adres wijkt af van ${emailProfile.masked}. Wis het opgeslagen adres om dit te wijzigen.`;
-    status.hidden = false;
-    return;
-  }
-  document.getElementById('emailProfileStatus').hidden = true;
+  if (!emailInputIsSaved()) await setEmailProfile(emailInputValue());
   goToStep(2);
 }
 
@@ -471,11 +460,13 @@ async function updateGeneration() {
   }
 
   try {
-    if (!await setEmailProfile(email)) {
-      clearGeneratedCode();
-      return;
+    if (!emailInputIsSaved()) {
+      if (!await setEmailProfile(email)) {
+        clearGeneratedCode();
+        return;
+      }
     }
-    const hash = await createHash(`${email}${password}${selectedApplication.key}`);
+    const hash = await createHash(`${emailProfile.hash}${password}${selectedApplication.key}`);
     if (request !== generationRequest) return;
     document.getElementById('passwordOutput').value = formatHash(type, hash, {
       length,
@@ -526,7 +517,7 @@ async function clearEverything() {
   } catch {
     // Clipboard clearing is not supported by every browser.
   }
-  document.getElementById('pubKey').value = '';
+  displayEmailProfile();
   document.getElementById('password').value = '';
   document.getElementById('repeatPassword').value = '';
   document.querySelector('input[name="passwordPurpose"][value="existing"]').checked = true;
@@ -540,6 +531,7 @@ async function clearEverything() {
     choice.classList.remove('selected');
     choice.setAttribute('aria-pressed', 'false');
   });
+  updateInputFeedback();
   clearGeneratedCode();
   updateCredentialType();
   goToStep(1);
@@ -547,17 +539,13 @@ async function clearEverything() {
 }
 
 async function clearEmailProfile() {
-  const confirmed = await askConfirmation(
-    'Het opgeslagen e-mailadres wordt volledig verwijderd. Je kunt daarna een nieuw e-mailadres instellen.',
-    'E-mailadres wissen'
-  );
-  if (!confirmed) return;
-
   localStorage.removeItem('emailProfile');
   localStorage.removeItem('key');
   emailProfile = null;
   document.getElementById('pubKey').value = '';
   displayEmailProfile();
+  updateInputFeedback();
+  updateStepControls();
   clearGeneratedCode();
   goToStep(1);
   document.getElementById('pubKey').focus();
@@ -566,6 +554,7 @@ async function clearEmailProfile() {
 function initializeEvents() {
   const emailInput = document.getElementById('pubKey');
   emailInput.addEventListener('input', () => {
+    if (emailInput.readOnly) return;
     const normalized = normalizeEmail(emailInput.value);
     if (emailInput.value !== normalized) {
       const start = emailInput.selectionStart;
@@ -641,8 +630,8 @@ function initializeEvents() {
 
   document.getElementById('cancelConfirm').addEventListener('click', () => resolveConfirmation(false));
   document.getElementById('acceptConfirm').addEventListener('click', () => resolveConfirmation(true));
-  document.querySelectorAll('.theme-toggle').forEach(button => {
-    button.addEventListener('click', toggleTheme);
+  document.querySelectorAll('.theme-select').forEach(select => {
+    select.addEventListener('change', () => applyTheme(select.value));
   });
   document.getElementById('confirmDialog').addEventListener('cancel', (event) => {
     event.preventDefault();
@@ -651,7 +640,11 @@ function initializeEvents() {
 }
 
 window.addEventListener('load', async () => {
-  applyTheme(localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+  const themeMode = localStorage.getItem('theme') || 'system';
+  applyTheme(['system', 'light', 'dark'].includes(themeMode) ? themeMode : 'system');
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if ((localStorage.getItem('theme') || 'system') === 'system') applyTheme('system', false);
+  });
   loadApplicationsFromLocalStorage();
   initializeEvents();
   await loadEmailProfile();

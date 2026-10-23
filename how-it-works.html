@@ -23,25 +23,26 @@
     <section class="intro">
       <p class="eyebrow">Duidelijk en controleerbaar</p>
       <h1>Hoe wordt je wachtwoord gemaakt?</h1>
-      <p>Je e-mailadres, hoofdwachtwoord en appnaam worden lokaal omgezet in een vast resultaat.</p>
+      <p>Je e-mailadres, wachtwoord en appnaam worden lokaal omgezet in een vast resultaat.</p>
     </section>
 
     <section class="how-card">
       <h2>De stappen</h2>
       <ul>
-        <li>Spaties worden uit je e-mailadres gehaald en hoofdletters worden kleine letters. Daarna worden je e-mailadres, hoofdwachtwoord en appnaam achter elkaar gezet.</li>
-        <li>De tekst wordt met SHA-384 gehasht in je browser. Dat levert 48 bytes op.</li>
+        <li>Spaties worden uit je e-mailadres gehaald en hoofdletters worden kleine letters. Van dit e-mailadres wordt eerst een SHA-256-hash gemaakt.</li>
+        <li>De hexadecimale e-mailhash, je wachtwoord en de appnaam worden achter elkaar gezet en met SHA-384 gehasht. Dat levert 48 bytes op.</li>
         <li>Die bytes worden omgezet in tekens. Een wachtwoord begint altijd met een cijfer, kleine letter en hoofdletter; als speciale tekens aanstaan, ook met een speciaal teken.</li>
         <li>Voor een pincode worden de bytes omgezet in cijfers.</li>
       </ul>
-      <p>De appnaam is de korte naam die bij je website hoort, zoals <strong>MICROSOFT</strong>. Het websiteadres en pictogram zijn alleen voor je lijst: ze veranderen het resultaat niet. Alleen een hash en afgeschermde versie van je e-mailadres worden op dit apparaat bewaard.</p>
+      <p>De appnaam is de korte naam die bij je website hoort, zoals <strong>MICROSOFT</strong>. Het websiteadres en pictogram zijn alleen voor je lijst: ze veranderen het resultaat niet. Alleen de e-mailhash en een afgeschermde versie van je e-mailadres worden op dit apparaat bewaard; de gewone tekst wordt niet opgeslagen.</p>
     </section>
 
     <section class="how-card">
       <h2>Pseudocode om over te zetten</h2>
-      <p>Gebruik UTF-8 voor de invoer en SHA-384 voor de hash. De standaardinstellingen geven dezelfde uitkomst als de oorspronkelijke versie: 20 tekens en speciale tekens voor een wachtwoord, of 6 cijfers voor een pincode.</p>
+      <p>Gebruik UTF-8, SHA-256 voor de e-mailhash en SHA-384 voor de code. De e-mailhash wordt als hexadecimale tekst aan het wachtwoord en de appnaam toegevoegd.</p>
       <pre class="pseudocode">email = lowercase(removeSpaces(email))
-input = email + masterPassword + appKey
+emailHash = SHA256(UTF8(email))
+input = HEX(emailHash) + password + appKey
 bytes = SHA384(UTF8(input))
 
 if type == "pin":
@@ -68,9 +69,10 @@ return first(passwordLength) characters of result</pre>
     <section class="how-card">
       <h2>Goed om te weten</h2>
       <ul>
-        <li>Hetzelfde e-mailadres, hoofdwachtwoord en dezelfde appnaam leveren steeds hetzelfde resultaat op. Verander je één ervan, dan krijg je een ander wachtwoord.</li>
-        <li>Bewaar je hoofdwachtwoord goed. Als je het vergeet, kan de app het niet terughalen.</li>
-        <li>De invoer wordt direct achter elkaar gezet, precies zoals in de pseudocode. Gebruik daarom overal dezelfde spelling en hoofdletters.</li>
+        <li>Hetzelfde e-mailadres, wachtwoord en dezelfde appnaam leveren steeds hetzelfde resultaat op. Verander je één ervan, dan krijg je een ander wachtwoord.</li>
+        <li>Bewaar je wachtwoord goed. Als je het vergeet, kan de app het niet terughalen.</li>
+        <li>De e-mailhash verandert de uitkomst ten opzichte van oudere versies. Gebruik de bijgewerkte app voor nieuwe codes.</li>
+        <li>De waarden worden direct achter elkaar gezet, precies zoals in de pseudocode. Gebruik daarom overal dezelfde spelling en hoofdletters.</li>
         <li>Dit is een eenvoudige deterministische generator, geen complete wachtwoordkluis. SHA-384 wordt hier rechtstreeks gebruikt; er is geen extra sleutelversterking of salt.</li>
         <li>Bij aangepaste lengtes, typekeuze of tekeninstellingen krijg je uiteraard een ander resultaat dan bij de standaardinstellingen.</li>
       </ul>

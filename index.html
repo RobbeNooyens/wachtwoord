@@ -9,12 +9,6 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="site-header">
-    <button type="button" class="theme-toggle desktop-theme-toggle" aria-label="Donkere modus inschakelen" aria-pressed="false">
-      <span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">Donkere modus</span>
-    </button>
-  </header>
-
   <main class="page-shell">
     <div class="wizard-progress" aria-label="Voortgang">
       <span id="stepLabel">Stap 1 van 3</span>
@@ -32,28 +26,21 @@
           <h2 id="credentialsTitle">Jouw gegevens</h2>
         </div>
 
-        <div id="savedEmail" class="saved-email" hidden>
-          <span class="saved-email-icon" aria-hidden="true">@</span>
-          <span>Opgeslagen als <strong id="maskedEmail"></strong></span>
-          <button type="button" id="clearEmailBtn" class="text-button">Wissen</button>
-        </div>
-
         <div class="field icon-field">
           <label class="visually-hidden" for="pubKey">E-mailadres</label>
           <span class="field-icon" aria-hidden="true">@</span>
-          <input type="email" id="pubKey" name="pubKey" inputmode="email" autocomplete="email" placeholder="E-mailadres" aria-label="E-mailadres" aria-describedby="emailWarning emailProfileStatus" autocapitalize="none" spellcheck="false">
+          <input type="text" id="pubKey" name="pubKey" inputmode="email" autocomplete="email" placeholder="E-mailadres" aria-label="E-mailadres" aria-describedby="emailWarning" autocapitalize="none" spellcheck="false">
+          <button type="button" id="clearEmailBtn" class="email-clear-button" hidden>Wissen</button>
           <p id="emailWarning" class="field-message warning-message" role="status" hidden>Dit lijkt geen volledig e-mailadres. Controleer de spelling.</p>
-          <p id="emailProfileStatus" class="field-message error-message" role="status" hidden></p>
         </div>
 
         <div class="field icon-field">
-          <label class="visually-hidden" for="password">Hoofdwachtwoord</label>
+          <label class="visually-hidden" for="password">Wachtwoord</label>
           <span class="field-icon key-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8 2 2-2 2 2 2-3 3-2-2-3.5 3.5"/></svg>
           </span>
-          <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Hoofdwachtwoord" aria-label="Hoofdwachtwoord" aria-describedby="passwordStatus">
+          <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Wachtwoord" aria-label="Wachtwoord">
         </div>
-        <p id="passwordStatus" class="field-message" role="status" hidden></p>
 
         <fieldset class="password-purpose">
           <legend>Waarvoor gebruik je dit?</legend>
@@ -68,11 +55,11 @@
         </fieldset>
 
         <div id="repeatPasswordField" class="field icon-field repeat-field" hidden>
-          <label class="visually-hidden" for="repeatPassword">Bevestig je hoofdwachtwoord</label>
+          <label class="visually-hidden" for="repeatPassword">Bevestig je wachtwoord</label>
           <span class="field-icon key-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8 2 2-2 2 2 2-3 3-2-2-3.5 3.5"/></svg>
           </span>
-          <input type="password" id="repeatPassword" name="repeatPassword" autocomplete="new-password" placeholder="Herhaal je hoofdwachtwoord" aria-label="Herhaal je hoofdwachtwoord" aria-describedby="repeatPasswordStatus">
+          <input type="password" id="repeatPassword" name="repeatPassword" autocomplete="new-password" placeholder="Herhaal je wachtwoord" aria-label="Herhaal je wachtwoord" aria-describedby="repeatPasswordStatus">
           <p id="repeatPasswordStatus" class="field-message" role="status" hidden></p>
         </div>
       </section>
@@ -155,15 +142,26 @@
     </section>
 
     <div class="wizard-controls" aria-label="Stapnavigatie">
-      <button type="button" class="theme-toggle mobile-theme-toggle" aria-label="Donkere modus inschakelen" aria-pressed="false">
-        <span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">Thema</span>
-      </button>
       <button type="button" id="backStep" class="button button-back" hidden>Terug</button>
+      <label class="theme-control mobile-theme-control" for="mobileThemeMode">Donkere modus:
+        <select id="mobileThemeMode" class="theme-select">
+          <option value="system">Systeem</option>
+          <option value="light">Licht</option>
+          <option value="dark">Donker</option>
+        </select>
+      </label>
       <button type="button" id="nextStep" class="button button-primary">Volgende</button>
     </div>
 
     <footer class="page-footer">
       <a href="how-it-works.html">Hoe werkt dit?</a>
+      <label class="theme-control" for="themeMode">Donkere modus:
+        <select id="themeMode" class="theme-select">
+          <option value="system">Systeem</option>
+          <option value="light">Licht</option>
+          <option value="dark">Donker</option>
+        </select>
+      </label>
     </footer>
   </main>
 
