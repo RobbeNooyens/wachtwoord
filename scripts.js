@@ -182,6 +182,7 @@ function createApplicationIcon(app) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'app-choice';
+  button.dataset.appKey = app.key;
   button.setAttribute('aria-pressed', 'false');
   button.setAttribute('aria-label', `Kies ${app.name}`);
   if (selectedApplication === app) {
@@ -248,7 +249,15 @@ function renderApplicationIcons() {
   addButton.innerHTML = '<span class="add-app-icon" aria-hidden="true">＋</span><span class="app-name">Toevoegen</span>';
   addButton.addEventListener('click', openApplicationDialog);
   addItem.appendChild(addButton);
-  appIcons.replaceChildren(addItem, ...visibleApps.map(createApplicationIcon));
+  appIcons.replaceChildren(addItem);
+  if (!filteredApps.length) {
+    const emptyMessage = document.createElement('p');
+    emptyMessage.className = 'empty-app-filter';
+    emptyMessage.textContent = `Geen apps met de letter ${activeAppLetter}.`;
+    appIcons.appendChild(emptyMessage);
+  } else {
+    appIcons.append(...visibleApps.map(createApplicationIcon));
+  }
 
   const expandButton = document.getElementById('expandApps');
   expandButton.hidden = filteredApps.length <= MAX_VISIBLE_APPS;
@@ -257,7 +266,6 @@ function renderApplicationIcons() {
 }
 
 function selectApplication(app, button) {
-  app.usageCount += 1;
   app.lastUsed = Date.now();
   saveApplications();
   selectedApplication = app;
@@ -270,13 +278,13 @@ function selectApplication(app, button) {
     renderApplicationIcons();
   } else {
     document.querySelectorAll('.app-choice:not(.add-app-choice)').forEach(choice => {
-      const isSelected = choice.getAttribute('aria-label') === `Kies ${app.name}`;
+      const isSelected = choice.dataset.appKey === app.key;
       choice.classList.toggle('selected', isSelected);
       choice.setAttribute('aria-pressed', String(isSelected));
     });
   }
   const selectedButton = [...document.querySelectorAll('.app-choice:not(.add-app-choice)')]
-    .find(choice => choice.getAttribute('aria-label') === `Kies ${app.name}`) || button;
+    .find(choice => choice.dataset.appKey === app.key) || button;
   selectedButton?.focus();
   updateGeneration();
 }
@@ -286,6 +294,9 @@ function updateAppLetterDisplay() {
   const letter = APP_LETTERS[Number(filter.value)];
   document.getElementById('appLetterValue').value = letter;
   filter.setAttribute('aria-valuetext', letter);
+  document.querySelectorAll('.letter-tick').forEach((tick, index) => {
+    tick.classList.toggle('active', index === Number(filter.value));
+  });
 }
 
 function openApplicationDialog() {
@@ -315,12 +326,15 @@ function addApplication(event) {
   const existingApp = applications.find(existing => {
     if (existing.key === app.key) return true;
     if (!existing.url) return false;
-    return normalizeWebsiteUrl(existing.url)?.origin === url.origin;
+    const existingUrl = normalizeWebsiteUrl(existing.url);
+    return existingUrl?.hostname.replace(/^www\./, '') === url.hostname.replace(/^www\./, '');
   });
   if (existingApp) {
     closeApplicationDialog();
     document.getElementById('appDialogForm').reset();
     document.getElementById('newAppName').dataset.touched = 'false';
+    appsExpanded = true;
+    renderApplicationIcons();
     selectApplication(existingApp);
     showPopup(`${existingApp.name} staat al in je lijst en is geselecteerd.`, 2500);
     return;
@@ -640,6 +654,7 @@ function initializeEvents() {
     tick.className = 'letter-tick';
     return tick;
   }));
+  updateAppLetterDisplay();
 
   document.getElementById('nextStep').addEventListener('click', async () => {
     if (currentStep === 1) await continueFromStepOne();

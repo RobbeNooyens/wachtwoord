@@ -595,10 +595,25 @@ a:hover {
   background: #aab8ca;
 }
 
+.letter-tick.active {
+  width: 5px;
+  height: 5px;
+  margin-top: -1px;
+  background: var(--blue);
+}
+
 .letter-endpoints {
   color: var(--muted);
   font-size: 10px;
   font-weight: 750;
+}
+
+.empty-app-filter {
+  grid-column: 2 / -1;
+  align-self: center;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .app-item {
