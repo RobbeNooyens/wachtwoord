@@ -1,80 +1,216 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="nl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Wachtwoorden</title>
-  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eff4ff">
+  <title>Wachtwoord</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container my-5">
-    <div class="row">
-      <div class="col-md-6">
-        <!-- Form section -->
-        <form id="userInfo" class="mb-3">
-          <div class="form-group">
-            <label for="pubKey">Sleutelwoord</label>
-            <input type="text" class="form-control" placeholder="Sleutelwoord" name="pubKey" id="pubKey" required>
-          </div>
-          <div class="form-group">
-            <label for="password">Wachtwoord</label>
-            <input type="password" class="form-control" placeholder="Wachtwoord" name="password" id="password" required>
-          </div>
-          <div class="form-group">
-            <label for="repeatPassword">Herhaal wachtwoord</label>
-            <input type="password" class="form-control" placeholder="Herhaal wachtwoord (optioneel)" name="repeatPassword" id="repeatPassword">
-          </div>
-          <hr>
-          <div class="form-group">
-            <label for="passwordTypeDropdown">Type wachtwoord</label>
-            <div class="input-group">
-            <select class="custom-select" id="passwordTypeDropdown" name="passwordType">
-              <option value="option1">Sterk wachtwoord (+ speciale tekens)</option>
-              <option value="option2">Sterk wachtwoord</option>
-              <option value="option3">6 cijferige PIN</option>
-              <option value="option4">4 cijferige PIN</option>
-            </select>
-            </div>
-          </div>
-          <hr>
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Genereer veilig wachtwoord</button>
-              </div>
-          <div class="form-group">
-              <div class="input-group">
-                <input type="password" class="form-control" id="passwordOutput">
-              <span class="password-toggle" id="password-toggle">
-                <i class="bi bi-eye"></i>
-              </span>
-              </div>
-            </div>
-          <div class="form-group">
-            <button type="button" class="btn btn-primary" id="copyBtn">Kopieer naar klembord</button>
-            <button type="button" class="btn btn-secondary" id="clearBtn">Maak klembord leeg</button>
-          </div>
-        </form>
-      </div>
-      <div class="col-md-6">
-       <!-- ... existing code ... -->
-      <!-- ... existing code ... -->
-        <h2>Applicatie</h2>
-        <div class="d-flex flex-wrap" id="applicationIcons">
-          <!-- Add new icon card -->
-          <div class="p-2">
-            <div class="app-icon btn-primary" id="addNewIcon">+</div>
-          </div>
-        </div>
+  <main class="page-shell">
+    <div class="wizard-progress" aria-label="Voortgang">
+      <span id="stepLabel">Stap 1 van 3</span>
+      <div class="progress-track" aria-hidden="true">
+        <span class="progress-segment active" data-progress="1"></span>
+        <span class="progress-segment" data-progress="2"></span>
+        <span class="progress-segment" data-progress="3"></span>
       </div>
     </div>
-  </div>
-  <div id="popup" class="popup">
-    This is a popup!
-  </div>
 
+    <section class="panel generator-panel" aria-label="Wachtwoordgenerator">
+      <section class="wizard-step" data-step="1" aria-labelledby="credentialsTitle">
+        <div class="panel-heading">
+          <span class="step-number" aria-hidden="true">1</span>
+          <h2 id="credentialsTitle">Jouw gegevens</h2>
+        </div>
+
+        <div class="field icon-field">
+          <label class="visually-hidden" for="pubKey">E-mailadres</label>
+          <span class="field-icon" aria-hidden="true">@</span>
+          <input type="text" id="pubKey" name="pubKey" inputmode="email" autocomplete="email" placeholder="E-mailadres" aria-label="E-mailadres" aria-describedby="emailWarning" autocapitalize="none" spellcheck="false">
+          <button type="button" id="clearEmailBtn" class="email-clear-button" hidden>Wissen</button>
+          <p id="emailWarning" class="field-message warning-message" role="status" hidden>Dit lijkt geen volledig e-mailadres. Controleer de spelling.</p>
+        </div>
+
+        <div class="field icon-field">
+          <label class="visually-hidden" for="password">Wachtwoord</label>
+          <span class="field-icon key-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8 2 2-2 2 2 2-3 3-2-2-3.5 3.5"/></svg>
+          </span>
+          <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Wachtwoord" aria-label="Wachtwoord">
+        </div>
+
+        <fieldset class="password-purpose">
+          <legend>Waarvoor gebruik je dit?</legend>
+          <label class="purpose-choice">
+            <input type="radio" name="passwordPurpose" value="existing" checked>
+            <span>Ik haal een bestaand wachtwoord op</span>
+          </label>
+          <label class="purpose-choice">
+            <input type="radio" name="passwordPurpose" value="new">
+            <span>Ik maak een nieuw wachtwoord aan</span>
+          </label>
+        </fieldset>
+
+        <div id="repeatPasswordField" class="field icon-field repeat-field" hidden>
+          <label class="visually-hidden" for="repeatPassword">Bevestig je wachtwoord</label>
+          <span class="field-icon key-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8 2 2-2 2 2 2-3 3-2-2-3.5 3.5"/></svg>
+          </span>
+          <input type="password" id="repeatPassword" name="repeatPassword" autocomplete="new-password" placeholder="Herhaal je wachtwoord" aria-label="Herhaal je wachtwoord" aria-describedby="repeatPasswordStatus">
+          <p id="repeatPasswordStatus" class="field-message" role="status" hidden></p>
+        </div>
+      </section>
+
+      <section class="wizard-step" data-step="2" aria-labelledby="typeTitle">
+        <div class="panel-heading">
+          <span class="step-number" aria-hidden="true">2</span>
+          <h2 id="typeTitle">Wat heb je nodig?</h2>
+        </div>
+
+        <fieldset class="choice-group">
+          <legend class="visually-hidden">Type toegangscode</legend>
+          <label class="choice-card">
+            <input type="radio" name="credentialType" value="password" checked>
+            <span class="choice-indicator" aria-hidden="true"></span>
+            <span><strong>Wachtwoord</strong><small>Voor websites en apps</small></span>
+          </label>
+          <label class="choice-card">
+            <input type="radio" name="credentialType" value="pin">
+            <span class="choice-indicator" aria-hidden="true"></span>
+            <span><strong>Pincode</strong><small>Alleen cijfers</small></span>
+          </label>
+        </fieldset>
+
+        <details class="settings">
+          <summary>Geavanceerde instellingen</summary>
+          <div id="passwordSettings" class="settings-content">
+            <p class="settings-description">De standaardinstellingen werken voor de meeste websites. Pas ze alleen aan als dat nodig is.</p>
+            <div class="field">
+              <label for="passwordLength">Wachtwoordlengte</label>
+              <div class="setting-control">
+                <input type="number" id="passwordLength" min="4" max="48" value="20" inputmode="numeric">
+                <span>tekens <span class="setting-default">(standaard 20)</span></span>
+              </div>
+            </div>
+            <label class="check-row" for="includeSpecial">
+              <input type="checkbox" id="includeSpecial" checked>
+              <span><strong>Speciale tekens</strong><small>Voeg tekens zoals ! en # toe</small></span>
+            </label>
+          </div>
+          <div id="pinSettings" class="settings-content" hidden>
+            <p class="settings-description">Kies hoeveel cijfers je pincode bevat.</p>
+            <div class="field">
+              <label for="pinLength">Pincode-lengte</label>
+              <div class="setting-control">
+                <input type="number" id="pinLength" min="4" max="12" value="6" inputmode="numeric">
+                <span>cijfers <span class="setting-default">(standaard 6)</span></span>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="wizard-step" data-step="3" aria-labelledby="appTitle">
+        <div class="panel-heading">
+          <span class="step-number" aria-hidden="true">3</span>
+          <h2 id="appTitle">Kies een website of app</h2>
+        </div>
+
+        <div class="app-filter">
+          <div class="app-filter-heading">
+            <label for="appLetterFilter">Filter op letter</label>
+            <button type="button" id="clearAppFilter" class="clear-app-filter" hidden>Alle apps</button>
+          </div>
+          <div class="app-letter-carousel">
+            <div id="letterTicks" class="letter-ticks" aria-hidden="true"></div>
+            <input type="range" id="appLetterFilter" min="0" max="25" value="0" step="1" aria-label="Filter websites en apps op beginletter" aria-valuetext="A">
+          </div>
+          <span id="appLetterValue" class="visually-hidden" aria-live="polite">A</span>
+        </div>
+        <div id="applicationIcons" class="app-grid" aria-label="Beschikbare websites en apps"></div>
+        <button type="button" id="expandApps" class="expand-apps" hidden>Toon alle apps</button>
+
+        <section class="result-card" aria-labelledby="resultTitle">
+          <div class="result-heading">
+            <h2 id="resultTitle">Jouw wachtwoord</h2>
+            <button type="button" id="password-toggle" class="icon-button" aria-label="Wachtwoord tonen" aria-pressed="false" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path class="eye-shape" d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle class="eye-shape" cx="12" cy="12" r="3"/>
+                <path class="eye-slash" d="M3 3 21 21"/>
+              </svg>
+            </button>
+          </div>
+          <input type="password" id="passwordOutput" aria-label="Gegenereerde code" readonly placeholder="Je code verschijnt hier" autocomplete="off">
+          <div class="result-actions">
+            <button type="button" id="copyBtn" class="button button-primary" disabled>Kopieer</button>
+            <button type="button" id="clearBtn" class="button button-secondary">Wissen</button>
+          </div>
+        </section>
+      </section>
+    </section>
+
+    <div class="wizard-controls" aria-label="Stapnavigatie">
+      <button type="button" id="backStep" class="button button-back" hidden>Terug</button>
+      <div class="theme-control mobile-theme-control" aria-label="Thema kiezen">
+        <button type="button" class="theme-button" data-theme-choice="light" aria-label="Lichte modus" title="Lichte modus">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+        </button>
+        <button type="button" class="theme-button" data-theme-choice="dark" aria-label="Donkere modus" title="Donkere modus">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.5 8.5 0 1 0 20.5 15.2Z"/></svg>
+        </button>
+      </div>
+      <button type="button" id="nextStep" class="button button-primary">Volgende</button>
+    </div>
+
+    <footer class="page-footer">
+      <a href="how-it-works.html">Hoe werkt dit?</a>
+      <span class="footer-separator" aria-hidden="true">·</span>
+      <div class="theme-control" aria-label="Donkere modus">
+        <span class="theme-label">Donkere modus</span>
+        <button type="button" class="theme-button" data-theme-choice="light" aria-label="Lichte modus" title="Lichte modus">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+        </button>
+        <button type="button" class="theme-button" data-theme-choice="dark" aria-label="Donkere modus" title="Donkere modus">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.5 8.5 0 1 0 20.5 15.2Z"/></svg>
+        </button>
+      </div>
+    </footer>
+  </main>
+
+  <dialog id="appDialog" class="app-dialog">
+    <form id="appDialogForm" class="dialog-content">
+      <h2>Website of app toevoegen</h2>
+      <div class="field">
+        <label for="newAppUrl">Websiteadres</label>
+        <input type="text" id="newAppUrl" placeholder="bijv. voorbeeld.nl" inputmode="url" autocomplete="url" required>
+      </div>
+      <div class="field">
+        <label for="newAppName">Naam</label>
+        <input type="text" id="newAppName" placeholder="Wordt automatisch ingevuld" required>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="button button-secondary" id="cancelAddApp">Annuleren</button>
+        <button type="submit" class="button button-primary">Toevoegen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog" class="confirm-dialog">
+    <div class="dialog-content">
+      <div class="dialog-icon warning-icon" aria-hidden="true">!</div>
+      <h2 id="confirmTitle">Weet je het zeker?</h2>
+      <p id="confirmMessage"></p>
+      <div class="dialog-actions">
+        <button type="button" class="button button-secondary" id="cancelConfirm">Annuleren</button>
+        <button type="button" class="button button-primary" id="acceptConfirm">Wissen</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="popup" class="toast" role="status" aria-live="polite"></div>
   <script src="scripts.js"></script>
   <script src="hash.js"></script>
   <script src="popup.js"></script>

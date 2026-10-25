@@ -1,10 +1,11 @@
-function showPopup(text, duration) {
-    var popup = document.getElementById("popup");
-    popup.style.display = "block"; // Show the popup
-    popup.textContent = text; // Set the text
+let popupTimeout;
 
-    // Hide the popup after 3 seconds (3000 milliseconds)
-    setTimeout(function() {
-        popup.style.display = "none";
-    }, duration);
+function showPopup(text, duration) {
+  const popup = document.getElementById('popup');
+  window.clearTimeout(popupTimeout);
+  popup.textContent = text;
+  popup.classList.add('visible');
+  popupTimeout = window.setTimeout(() => {
+    popup.classList.remove('visible');
+  }, duration);
 }

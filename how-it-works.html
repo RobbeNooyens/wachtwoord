@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f8fb">
+  <title>Hoe werkt Wachtwoord?</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="Terug naar Wachtwoord">
+      <span class="brand-mark" aria-hidden="true">W</span>
+      <span>Wachtwoord</span>
+    </a>
+    <nav aria-label="Hoofdnavigatie">
+      <a href="index.html">Wachtwoord maken</a>
+    </nav>
+  </header>
+
+  <main class="page-shell how-page">
+    <section class="intro">
+      <p class="eyebrow">Duidelijk en controleerbaar</p>
+      <h1>Hoe wordt je wachtwoord gemaakt?</h1>
+      <p>Je e-mailadres, wachtwoord en appnaam worden lokaal omgezet in een vast resultaat.</p>
+    </section>
+
+    <section class="how-card">
+      <h2>De stappen</h2>
+      <ul>
+        <li>Spaties worden uit je e-mailadres gehaald en hoofdletters worden kleine letters. Van dit e-mailadres wordt eerst een SHA-256-hash gemaakt.</li>
+        <li>De hexadecimale e-mailhash, je wachtwoord en de appnaam worden achter elkaar gezet en met SHA-384 gehasht. Dat levert 48 bytes op.</li>
+        <li>Die bytes worden omgezet in tekens. Een wachtwoord begint altijd met een cijfer, kleine letter en hoofdletter; als speciale tekens aanstaan, ook met een speciaal teken.</li>
+        <li>Voor een pincode worden de bytes omgezet in cijfers.</li>
+      </ul>
+      <p>De appnaam is de korte naam die bij je website hoort, zoals <strong>MICROSOFT</strong>. Het websiteadres en pictogram zijn alleen voor je lijst: ze veranderen het resultaat niet. Alleen de e-mailhash en een afgeschermde versie van je e-mailadres worden op dit apparaat bewaard; de gewone tekst wordt niet opgeslagen.</p>
+    </section>
+
+    <section class="how-card">
+      <h2>Pseudocode om over te zetten</h2>
+      <p>Gebruik UTF-8, SHA-256 voor de e-mailhash en SHA-384 voor de code. De e-mailhash wordt als hexadecimale tekst aan het wachtwoord en de appnaam toegevoegd.</p>
+      <pre class="pseudocode">email = lowercase(removeSpaces(email))
+emailHash = SHA256(UTF8(email))
+input = HEX(emailHash) + password + appKey
+bytes = SHA384(UTF8(input))
+
+if type == "pin":
+    result = ""
+    for byte in bytes:
+        result += digitCharacters[byte mod 10]
+    return first(pinLength) characters of result
+
+characters = digits + lowercase + uppercase
+result = digitCharacters[bytes[0] mod 10]
+result += lowercase[bytes[1] mod 26]
+result += uppercase[bytes[2] mod 26]
+
+if includeSpecial:
+    characters += specialCharacters
+    result += specialCharacters[bytes[3] mod length(specialCharacters)]
+
+for byte in bytes starting at index 4:
+    result += characters[byte mod length(characters)]
+
+return first(passwordLength) characters of result</pre>
+    </section>
+
+    <section class="how-card">
+      <h2>Goed om te weten</h2>
+      <ul>
+        <li>Hetzelfde e-mailadres, wachtwoord en dezelfde appnaam leveren steeds hetzelfde resultaat op. Verander je één ervan, dan krijg je een ander wachtwoord.</li>
+        <li>Bewaar je wachtwoord goed. Als je het vergeet, kan de app het niet terughalen.</li>
+        <li>De e-mailhash verandert de uitkomst ten opzichte van oudere versies. Gebruik de bijgewerkte app voor nieuwe codes.</li>
+        <li>De waarden worden direct achter elkaar gezet, precies zoals in de pseudocode. Gebruik daarom overal dezelfde spelling en hoofdletters.</li>
+        <li>Dit is een eenvoudige deterministische generator, geen complete wachtwoordkluis. SHA-384 wordt hier rechtstreeks gebruikt; er is geen extra sleutelversterking of salt.</li>
+        <li>Bij aangepaste lengtes, typekeuze of tekeninstellingen krijg je uiteraard een ander resultaat dan bij de standaardinstellingen.</li>
+      </ul>
+    </section>
+
+    <a class="back-link" href="index.html">← Terug naar wachtwoorden maken</a>
+  </main>
+</body>
+</html>
