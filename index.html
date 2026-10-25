@@ -11,11 +11,12 @@
 <body>
   <main class="page-shell">
     <div class="wizard-progress" aria-label="Voortgang">
-      <span id="stepLabel">Stap 1 van 3</span>
+      <span id="stepLabel">Stap 1 van 4</span>
       <div class="progress-track" aria-hidden="true">
         <span class="progress-segment active" data-progress="1"></span>
         <span class="progress-segment" data-progress="2"></span>
         <span class="progress-segment" data-progress="3"></span>
+        <span class="progress-segment" data-progress="4"></span>
       </div>
     </div>
 
@@ -62,6 +63,7 @@
           <input type="password" id="repeatPassword" name="repeatPassword" autocomplete="new-password" placeholder="Herhaal je wachtwoord" aria-label="Herhaal je wachtwoord" aria-describedby="repeatPasswordStatus">
           <p id="repeatPasswordStatus" class="field-message" role="status" hidden></p>
         </div>
+
       </section>
 
       <section class="wizard-step" data-step="2" aria-labelledby="typeTitle">
@@ -99,6 +101,11 @@
               <input type="checkbox" id="includeSpecial" checked>
               <span><strong>Speciale tekens</strong><small>Voeg tekens zoals ! en # toe</small></span>
             </label>
+            <div class="field">
+              <label for="legacySeed">Oude versie</label>
+              <input type="text" id="legacySeed" autocomplete="off" spellcheck="false" placeholder="Leeg = huidige methode">
+              <p class="settings-description">Gebruik de tekst die de vorige versie gebruikte. Deze waarde wordt direct gebruikt en niet opgeslagen.</p>
+            </div>
           </div>
           <div id="pinSettings" class="settings-content" hidden>
             <p class="settings-description">Kies hoeveel cijfers je pincode bevat.</p>
@@ -132,6 +139,14 @@
         </div>
         <div id="applicationIcons" class="app-grid" aria-label="Beschikbare websites en apps"></div>
         <button type="button" id="expandApps" class="expand-apps" hidden>Toon alle apps</button>
+
+      </section>
+
+      <section class="wizard-step" data-step="4" aria-labelledby="passwordTitle">
+        <div class="panel-heading">
+          <span class="step-number" aria-hidden="true">4</span>
+          <h2 id="passwordTitle">Jouw wachtwoord</h2>
+        </div>
 
         <section class="result-card" aria-labelledby="resultTitle">
           <div class="result-heading">

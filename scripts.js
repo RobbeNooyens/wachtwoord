@@ -392,10 +392,14 @@ function emailInputValue() {
 
 function stepOneIsValid() {
   const email = emailInputValue();
+  return Boolean(email) && passwordInputsAreValid();
+}
+
+function passwordInputsAreValid() {
   const password = document.getElementById('password').value;
   const isNew = document.querySelector('input[name="passwordPurpose"]:checked').value === 'new';
   const repeated = document.getElementById('repeatPassword').value;
-  return Boolean(email) && Boolean(password) && (!isNew || (Boolean(repeated) && repeated === password));
+  return Boolean(password) && (!isNew || (Boolean(repeated) && repeated === password));
 }
 
 function updateInputFeedback() {
@@ -426,7 +430,8 @@ function updateStepControls() {
   const back = document.getElementById('backStep');
   const next = document.getElementById('nextStep');
   const isMobile = window.matchMedia('(max-width: 700px)').matches;
-  document.getElementById('stepLabel').textContent = `Stap ${currentStep} van 3`;
+  const stepCount = document.querySelectorAll('.wizard-step').length;
+  document.getElementById('stepLabel').textContent = `Stap ${currentStep} van ${stepCount}`;
   document.querySelectorAll('.progress-segment').forEach((segment) => {
     segment.classList.toggle('active', Number(segment.dataset.progress) <= currentStep);
   });
@@ -445,18 +450,22 @@ function updateStepControls() {
     next.textContent = 'Volgende';
     next.disabled = false;
     next.hidden = false;
+  } else if (currentStep === 3) {
+    next.textContent = 'Volgende';
+    next.disabled = !selectedApplication;
+    next.hidden = false;
   } else {
     next.hidden = true;
   }
 }
 
 function goToStep(step) {
-  currentStep = Math.max(1, Math.min(3, step));
+  currentStep = Math.max(1, Math.min(4, step));
   updateStepControls();
   if (window.matchMedia('(max-width: 700px)').matches) {
     document.querySelector('.wizard-progress').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-  if (currentStep === 3) updateGeneration();
+  if (currentStep === 4) updateGeneration();
 }
 
 async function continueFromStepOne() {
@@ -503,15 +512,13 @@ async function updateGeneration() {
   const request = ++generationRequest;
   const email = emailInputValue();
   const password = document.getElementById('password').value;
-  const isNew = document.querySelector('input[name="passwordPurpose"]:checked').value === 'new';
-  const repeated = document.getElementById('repeatPassword').value;
   const type = document.querySelector('input[name="credentialType"]:checked').value;
   const lengthField = document.getElementById(type === 'pin' ? 'pinLength' : 'passwordLength');
   const length = Number(lengthField.value);
   const min = Number(lengthField.min);
   const max = Number(lengthField.max);
 
-  if (!email || !password || (isNew && (!repeated || repeated !== password)) ||
+  if (!email || !passwordInputsAreValid() ||
       !selectedApplication || !Number.isInteger(length) || length < min || length > max) {
     clearGeneratedCode();
     return;
@@ -524,7 +531,9 @@ async function updateGeneration() {
         return;
       }
     }
-    const hash = await createHash(`${emailProfile.hash}${password}${selectedApplication.key}`);
+    const legacySeed = document.getElementById('legacySeed').value;
+    const emailSeed = type === 'password' && legacySeed ? legacySeed : emailProfile.hash;
+    const hash = await createHash(`${emailSeed}${password}${selectedApplication.key}`);
     if (request !== generationRequest) return;
     document.getElementById('passwordOutput').value = formatHash(type, hash, {
       length,
@@ -584,6 +593,7 @@ async function clearEverything() {
   document.getElementById('passwordLength').value = '20';
   document.getElementById('pinLength').value = '6';
   document.getElementById('includeSpecial').checked = true;
+  document.getElementById('legacySeed').value = '';
   selectedApplication = null;
   document.querySelectorAll('.app-choice').forEach(choice => {
     choice.classList.remove('selected');
@@ -652,6 +662,7 @@ function initializeEvents() {
   document.getElementById('passwordLength').addEventListener('input', updateGeneration);
   document.getElementById('pinLength').addEventListener('input', updateGeneration);
   document.getElementById('includeSpecial').addEventListener('change', updateGeneration);
+  document.getElementById('legacySeed').addEventListener('input', updateGeneration);
   document.getElementById('expandApps').addEventListener('click', () => {
     appsExpanded = !appsExpanded;
     renderApplicationIcons();
@@ -675,7 +686,8 @@ function initializeEvents() {
   document.getElementById('nextStep').addEventListener('click', async () => {
     if (currentStep === 1) await continueFromStepOne();
     else if (currentStep === 2) goToStep(3);
-    else await copyGeneratedCode();
+    else if (currentStep === 3) goToStep(4);
+    else if (currentStep === 4) await copyGeneratedCode();
   });
   document.getElementById('backStep').addEventListener('click', () => goToStep(currentStep - 1));
   document.getElementById('copyBtn').addEventListener('click', copyGeneratedCode);
